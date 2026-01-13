@@ -1,0 +1,417 @@
+/* =========================
+Minimal UI + Theme (Light/Dark)
+========================= */
+
+:root{
+  --radius-pill: 999px;
+  --shadow: 0 8px 30px rgba(0,0,0,.35);
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+  --footer-h: 64px;
+
+  /* alturas/escala */
+  --topbar-h: 72px;
+
+  /* +25% nos KPIs (percent + subtitle) */
+  --kpi-scale: 1.25;
+}
+
+/* Theme tokens */
+html[data-theme="dark"]{
+  --bg: #0b0b0c;
+  --surface: rgba(0,0,0,.12);
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.70);
+  --border: rgba(255,255,255,.18);
+  --border2: rgba(255,255,255,.12);
+}
+
+html[data-theme="light"]{
+  --bg: #f6f7fb;
+  --surface: rgba(255,255,255,.75);
+  --text: rgba(10,12,18,.92);
+  --muted: rgba(10,12,18,.62);
+  --border: rgba(10,12,18,.18);
+  --border2: rgba(10,12,18,.12);
+}
+
+*{ box-sizing: border-box; }
+html, body{ height: 100%; }
+body{
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app{
+  height: 100vh;
+  width: 100vw;
+  border: 2px solid var(--frame);
+  background: linear-gradient(180deg, rgba(255,255,255,.06), transparent 30%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Topbar */
+.topbar{
+  height: var(--topbar-h);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto; /* <<< importante */
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border2);
+  gap: 10px;
+}
+
+.topbar__left{ display:flex; align-items:center; justify-content:flex-start; min-width: 0; }
+.topbar__center{ display:flex; align-items:center; justify-content:center; gap:10px; min-width: 0; }
+.topbar__right{ display:flex; align-items:center; justify-content:flex-end; min-width: 0; }
+
+/* Clock center */
+.clock__text{
+  font-size: 24px;
+  letter-spacing: .2px;
+  color: var(--text);
+  white-space: nowrap;
+
+  /* permite encolher sem quebrar layout */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+
+  /* pedido: header bold */
+  font-weight: 700;
+}
+
+/* Stage */
+.stage{
+  height: calc(100vh - var(--topbar-h)); /* <<< corrigido */
+  position: relative;
+}
+
+/* 3 columns like the print */
+.tiles{
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.tile{
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+}
+
+.tile + .tile{
+  border-left: 1px solid var(--border2);
+}
+
+/* Inner alignment */
+.tile__inner{
+  width: min(92%, 520px);
+  text-align: center;
+  padding: 18px 10px;
+}
+
+/* Big percent (+25% via --kpi-scale) */
+.percent{
+  font-size: clamp(
+    calc(70px * var(--kpi-scale)),
+    calc(10vw * var(--kpi-scale)),
+    calc(150px * var(--kpi-scale))
+  );
+  font-weight: 800;
+  letter-spacing: -1.4px;
+  line-height: 1;
+  margin-bottom: 18px;
+}
+
+/* Subtitle (+25% via --kpi-scale) */
+.subtitle{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: clamp(
+    calc(22px * var(--kpi-scale)),
+    calc(3.4vw * var(--kpi-scale)),
+    calc(52px * var(--kpi-scale))
+  );
+  font-weight: 500;
+  letter-spacing: .2px;
+  color: var(--text);
+}
+
+.checkEmoji{
+  font-size: 0.9em;
+  line-height: 1;
+}
+
+/* Pills */
+.pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  background: rgba(255,255,255,.03);
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+
+  /* permite truncar texto dentro */
+  min-width: 0;
+}
+
+.pill--ghost{ background: transparent; }
+.pill--ghost:hover{ border-color: rgba(255,255,255,.26); }
+
+html[data-theme="light"] .pill--ghost:hover{
+  border-color: rgba(10,12,18,.30);
+}
+
+.pill__icon{
+  display:inline-flex;
+  opacity: .9;
+  flex: 0 0 auto;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.clock__icon {
+  display:inline-flex;
+  opacity: .9;
+  flex: 0 0 auto;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.pill__text{
+  font-size: 24px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+
+  /* pedido: header bold (textos dos pills do header) */
+  font-weight: 700;
+}
+
+.pill__chev{
+  opacity: .8;
+  flex: 0 0 auto;
+}
+
+/* Buy me a coffee — DESKTOP (default) */
+.pill--coffee{
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  font-size: 24px;
+  opacity: .92;
+  z-index: 10;
+  white-space: nowrap;
+
+  /* pedido: footer bold */
+  font-weight: 700;
+}
+
+.pill--coffee:hover{
+  opacity: 1;
+  border-color: rgba(255,255,255,.26);
+}
+html[data-theme="light"] .pill--coffee:hover{
+  border-color: rgba(10,12,18,.30);
+}
+
+/* Language menu */
+.lang{ position: relative; }
+
+.menu{
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 220px;
+  background: rgba(15,15,17,.98);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: var(--shadow);
+  z-index: 20;
+}
+html[data-theme="light"] .menu{
+  background: rgba(255,255,255,.98);
+}
+
+/* Dropdown de idiomas — desktop maior */
+.menu__item{
+  font-size: 20px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px;
+  border-radius: 10px;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.menu__item:hover{ background: rgba(255,255,255,.08); }
+html[data-theme="light"] .menu__item:hover{ background: rgba(10,12,18,.06); }
+
+.menu__item[aria-checked="true"]{ background: rgba(255,255,255,.10); }
+html[data-theme="light"] .menu__item[aria-checked="true"]{ background: rgba(10,12,18,.08); }
+
+.menu__code{
+  color: var(--muted);
+  font-size: 18px;
+  letter-spacing: .6px;
+}
+
+/* Status */
+.status{
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  max-width: min(560px, 75vw);
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,.55);
+  color: rgba(255,255,255,.86);
+  font-size: 13px;
+}
+html[data-theme="light"] .status{
+  background: rgba(255,255,255,.92);
+  color: rgba(10,12,18,.86);
+}
+
+/* Focus */
+:focus-visible{
+  outline: 2px solid rgba(90,145,255,.75);
+  outline-offset: 2px;
+}
+
+/* Responsive */
+@media (max-width: 900px){
+  .tiles{
+    grid-template-columns: 1fr;
+  }
+  .tile + .tile{
+    border-left: 0;
+    border-top: 1px solid var(--border2);
+  }
+
+  /* no mobile, precisamos reduzir topbar para caber */
+  .topbar{
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  /* relógio menor e truncável */
+  .clock__text{
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* pills mais compactas */
+  .pill{
+    padding: 8px 10px;
+    gap: 8px;
+    max-width: none; /* <<< no mobile, agora vamos só de ícone */
+  }
+
+  /* texto dos pills menor no mobile (e escondido para theme/lang) */
+  .pill__text{
+    font-size: 16px;
+  }
+
+  /* no mobile: somente ícones (tema e idioma), sem texto */
+  #langBtn .pill__text,
+  #themeBtn .pill__text{
+    display: none;
+  }
+
+  /* no mobile: esconder a setinha do idioma */
+  #langBtn .pill__chev{
+    display: none;
+  }
+
+  /* botões mais compactos só com ícone */
+  #langBtn,
+  #themeBtn{
+    padding: 8px 10px;
+    gap: 0;
+    max-width: none;
+  }
+
+  /* opcional: ícone um pouco maior no mobile */
+  #langBtn .pill__icon,
+  #themeBtn .pill__icon{
+    font-size: 18px;
+  }
+
+  /* reserva espaço para o footer fixo não cobrir o conteúdo */
+  .stage{
+    padding-bottom: calc(var(--footer-h) + env(safe-area-inset-bottom));
+  }
+
+  /* Buy me a coffee — MOBILE como footer FULL-WIDTH com borda superior e conteúdo centralizado */
+  .pill--coffee{
+    min-height: var(--footer-h);
+    padding: 10px 16px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    width: 100%;
+    max-width: none;
+
+    transform: none;
+
+    /* remove estilo de pill */
+    border-radius: 0;
+    border: 0;
+
+    /* separador completo no topo */
+    border-top: 1px solid var(--border2);
+
+    /* fundo tipo glass */
+    background: rgba(0,0,0,.55);
+    backdrop-filter: blur(10px);
+
+    /* centralização real */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    padding: 14px 16px;
+    box-sizing: border-box;
+
+    z-index: 50;
+
+    /* pedido: footer bold */
+    font-weight: 700;
+  }
+
+  html[data-theme="light"] .pill--coffee{
+    background: rgba(255,255,255,.78);
+  }
+}
+
+/* extra: telas bem estreitas */
+@media (max-width: 420px){
+  /* se ficar apertado, esconda o texto do idioma e mantenha ícone */
+  #langBtn .pill__text{ display: none; }
+}

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Partes do Tempo</title>
+  <link rel="icon" type="image/png" href="https://i.imgur.com/tME5AaS.png">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="app" role="application">
+    <header class="topbar">
+      <!-- Left: Theme -->
+      <div class="topbar__left">
+        <button id="themeBtn" class="pill pill--ghost" type="button" aria-label="Theme toggle">
+          <span class="pill__icon" aria-hidden="true" id="themeIcon">🌓</span>
+          <span class="pill__text" id="themeLabel" data-i18n="ui.dark">Escuro</span>
+        </button>
+      </div>
+
+      <!-- Center: Live date/time -->
+      <div class="topbar__center" aria-live="polite">
+        <span class="clock__icon" aria-hidden="true">🗓️</span>
+        <span id="liveClock" class="clock__text">--/--/---- - --:--:--</span>
+      </div>
+
+      <!-- Right: Language -->
+      <div class="topbar__right">
+        <div class="lang">
+          <button
+  id="langBtn"
+  class="pill pill--ghost"
+  type="button"
+  aria-haspopup="menu"
+  aria-expanded="false"
+>
+  <span class="pill__icon" aria-hidden="true">🌐</span>
+  <span id="langBtnLabel" class="pill__text" data-i18n="ui.language">Idioma</span>
+  <span class="pill__chev" aria-hidden="true">▾</span>
+</button>
+
+          <div id="langMenu" class="menu" role="menu" aria-label="Language menu" hidden>
+            <!-- preenchido via JS -->
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="stage" aria-live="polite">
+      <section class="tiles" aria-label="Progress overview">
+        <!-- Weekly -->
+        <article class="tile" aria-label="Weekly progress">
+          <div class="tile__inner">
+            <div class="percent" id="weeklyPercent">0%</div>
+            <div class="subtitle">
+              <span id="weeklyLabel" data-i18n="labels.weeklyDone">da semana concluída</span>
+              <span class="checkEmoji" aria-hidden="true">✅</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Monthly -->
+        <article class="tile" aria-label="Monthly progress">
+          <div class="tile__inner">
+            <div class="percent" id="monthlyPercent">0%</div>
+            <div class="subtitle">
+              <span id="monthlyLabel" data-i18n="labels.monthlyDoneTpl">de {month} concluído</span>
+              <span class="checkEmoji" aria-hidden="true">✅</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Yearly -->
+        <article class="tile" aria-label="Yearly progress">
+          <div class="tile__inner">
+            <div class="percent" id="yearlyPercent">0%</div>
+            <div class="subtitle">
+              <span id="yearlyLabel" data-i18n="labels.yearlyDone">do ano concluído</span>
+              <span class="checkEmoji" aria-hidden="true">✅</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <div id="status" class="status" role="status" hidden>
+        <span data-i18n="errors.paused">Atualização pausou. Recarregue a página.</span>
+      </div>
+    </main>
+
+    <a
+      id="coffeeBtn"
+      class="pill pill--coffee"
+      href="#"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      ☕ Buy me a coffee
+    </a>
+  </div>
+
+  <script src="translations.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
