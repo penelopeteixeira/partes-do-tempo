@@ -2,7 +2,7 @@
    Config
    ========================================================== */
 
-const COFFEE_LINK = "https://www.buymeacoffee.com/yourname";
+const COFFEE_LINK = "https://livepix.gg/partesdotempo";
 
 const STORAGE_LANG_KEY = "preferredLang_v1";
 const STORAGE_THEME_KEY = "preferredTheme_v1";
@@ -655,4 +655,5 @@ function bindEvents(){
   startClock();
 
   lastSuccessfulUpdateAt = Date.now();
+
 })();
