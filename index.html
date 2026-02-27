@@ -1,18 +1,52 @@
 <!doctype html>
 <html lang="en" data-theme="dark">
 <head>
+  <!-- =========================================================
+  HEAD / META
+  - Charset, viewport e color-scheme
+  - Título, favicon e CSS principal do projeto
+========================================================= -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
   <title>Partes do Tempo</title>
-  <link rel="icon" type="image/png" href="https://i.imgur.com/Ao6mfUy.png">
+  <link rel="icon" type="image/png" href="https://i.imgur.com/tME5AaS.png">
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
+  <!-- =========================================================
+  BACKGROUND DINÂMICO (Pixel Rain)
+  - canvas (#bg): onde o JS desenha a animação
+  - .vignette: vinheta/glow para dar profundidade
+  - .frame: moldura discreta
+  Observação: precisa ficar ANTES da .app pra estar “atrás”
+  ========================================================= -->
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+  <div class="frame" aria-hidden="true"></div>
+
+  <!-- =========================================================
+    APP (UI PRINCIPAL)
+    - Toda a sua interface fica aqui
+    - Deve existir APENAS UMA .app
+    ========================================================= -->
   <div class="app" role="application">
+
+    <!-- =========================================================
+      TOPBAR (Cabeçalho fixo da UI)
+      - Esquerda: botão de tema
+      - Centro: relógio/data ao vivo
+      - Direita: botão/menu de idioma
+      ========================================================= -->
     <header class="topbar">
-      <!-- Left: Theme -->
+
+      <!-- =========================
+        LEFT: Theme toggle
+        - Botão que alterna tema light/dark
+        - #themeIcon muda o emoji
+        - #themeLabel recebe texto i18n
+        ========================= -->
       <div class="topbar__left">
         <button id="themeBtn" class="pill pill--ghost" type="button" aria-label="Theme toggle">
           <span class="pill__icon" aria-hidden="true" id="themeIcon">🌓</span>
@@ -20,26 +54,33 @@
         </button>
       </div>
 
-      <!-- Center: Live date/time -->
+      <!-- =========================
+      CENTER: Live clock
+      - #liveClock é atualizado a cada 1s no JS
+      ========================= -->
       <div class="topbar__center" aria-live="polite">
         <span class="clock__icon" aria-hidden="true">🗓️</span>
         <span id="liveClock" class="clock__text">--/--/---- - --:--:--</span>
       </div>
 
-      <!-- Right: Language -->
+      <!-- =========================
+        RIGHT: Language dropdown
+        - #langBtn abre/fecha o menu
+        - #langMenu é preenchido via JS
+        ========================= -->
       <div class="topbar__right">
         <div class="lang">
           <button
-  id="langBtn"
-  class="pill pill--ghost"
-  type="button"
-  aria-haspopup="menu"
-  aria-expanded="false"
->
-  <span class="pill__icon" aria-hidden="true">🌐</span>
-  <span id="langBtnLabel" class="pill__text" data-i18n="ui.language">Idioma</span>
-  <span class="pill__chev" aria-hidden="true">▾</span>
-</button>
+            id="langBtn"
+            class="pill pill--ghost"
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+            <span class="pill__icon" aria-hidden="true">🌐</span>
+            <span id="langBtnLabel" class="pill__text" data-i18n="ui.language">Idioma</span>
+            <span class="pill__chev" aria-hidden="true">▾</span>
+          </button>
 
           <div id="langMenu" class="menu" role="menu" aria-label="Language menu" hidden>
             <!-- preenchido via JS -->
@@ -48,8 +89,20 @@
       </div>
     </header>
 
+    <!-- =========================================================
+      MAIN / STAGE
+      - Contém os tiles (weekly/monthly/yearly)
+      - #status aparece se o watchdog detectar travamento
+      ========================================================= -->
     <main class="stage" aria-live="polite">
+
+      <!-- =========================
+        TILES (3 colunas desktop / 1 coluna mobile)
+        - #weeklyPercent / #monthlyPercent / #yearlyPercent atualizados no JS
+        - labels usam data-i18n
+        ========================= -->
       <section class="tiles" aria-label="Progress overview">
+
         <!-- Weekly -->
         <article class="tile" aria-label="Weekly progress">
           <div class="tile__inner">
@@ -82,13 +135,23 @@
             </div>
           </div>
         </article>
+
       </section>
 
+      <!-- =========================
+        STATUS / WATCHDOG
+        - Aparece se o loop de update ficar “stale”
+        ========================= -->
       <div id="status" class="status" role="status" hidden>
         <span data-i18n="errors.paused">Atualização pausou. Recarregue a página.</span>
       </div>
     </main>
 
+    <!-- =========================================================
+      CTA: Buy me a coffee
+      - Link é setado no JS (COFFEE_LINK)
+      - No mobile vira footer fixo (via CSS)
+      ========================================================= -->
     <a
       id="coffeeBtn"
       class="pill pill--coffee"
@@ -96,14 +159,17 @@
       target="_blank"
       rel="noopener noreferrer"
     >
-      ☕ Me compre um café
+      ☕ Buy me a coffee
     </a>
+
   </div>
 
+  <!-- =========================================================
+    SCRIPTS
+    - translations.js define TRANSLATIONS, SUPPORTED_LANGS, LANG_META
+    - script.js contém lógica do app + initPixelRainBackground()
+    ========================================================= -->
   <script src="translations.js"></script>
   <script src="script.js"></script>
 </body>
-
 </html>
-
-
