@@ -1,5 +1,7 @@
 /* ==========================================================
-   Config
+   1) CONFIG / CONSTANTES
+   - Links e chaves de storage
+   - Intervalos do app (progresso, relógio, watchdog)
    ========================================================== */
 
 const COFFEE_LINK = "https://livepix.gg/partesdotempo";
@@ -7,12 +9,14 @@ const COFFEE_LINK = "https://livepix.gg/partesdotempo";
 const STORAGE_LANG_KEY = "preferredLang_v1";
 const STORAGE_THEME_KEY = "preferredTheme_v1";
 
-const UPDATE_INTERVAL_MS = 60_000;      // progresso
+const UPDATE_INTERVAL_MS = 60_000;      // atualiza percentuais
 const CLOCK_INTERVAL_MS = 1_000;        // relógio ao vivo
-const STALE_AFTER_MS = 75 * 60_000;     // watchdog
+const STALE_AFTER_MS = 75 * 60_000;     // watchdog (se travar, mostra status)
 
 /* ==========================================================
-   Monthly & Yearly rules
+   2) REGRAS DE PROGRESSO (Monthly & Yearly)
+   - Monthly: incrementos fracionados durante o dia
+   - Yearly: partes cumulativas ao longo do dia
    ========================================================== */
 
 const MONTHLY_CHECKPOINTS = [
@@ -34,7 +38,9 @@ const YEARLY_CHECKPOINTS = [
 const YEARLY_CUM_PARTS = [0, 2, 4, 6];
 
 /* ==========================================================
-   Weekly: fixed checkpoint table
+   3) WEEKLY: TABELA FIXA DE CHECKPOINTS
+   - Percentual em horários fixos (Mon–Fri)
+   - Sábado = 100, Domingo = 0 (reset)
    ========================================================== */
 
 const WEEKLY_CHECKPOINTS = [
@@ -95,7 +101,10 @@ const WEEKLY_CHECKPOINTS = [
 ];
 
 /* ==========================================================
-   State
+   4) STATE (estado do app)
+   - idioma/tema atual
+   - timers (update e clock)
+   - watchdog timestamp
    ========================================================== */
 
 let currentLang = "en";
@@ -105,7 +114,7 @@ let updateTimer = null;
 let clockTimer = null;
 
 /* ==========================================================
-   DOM
+   5) DOM (atalhos de elementos)
    ========================================================== */
 
 const $ = (sel) => document.querySelector(sel);
@@ -132,11 +141,11 @@ const liveClockEl = $("#liveClock");
 const coffeeBtn = $("#coffeeBtn");
 
 /* ==========================================================
-   Helpers
+   6) HELPERS (utilidades gerais)
+   - clamp, data segura, locale por idioma, i18n helpers
    ========================================================== */
 
 function clamp(n, min, max){ return Math.min(max, Math.max(min, n)); }
-
 function safeNow(){ return new Date(); }
 
 function getLocaleForLang(lang){
@@ -177,23 +186,25 @@ function formatPercent(value){
 function monthName(now){
   const locale = getLocaleForLang(currentLang);
   const fmt = new Intl.DateTimeFormat(locale, { month: "long" });
-  return fmt.format(now); // sem capitalizar
+  return fmt.format(now);
 }
+
+/* ==========================================================
+   7) I18N APPLY
+   - aplica textos por data-i18n
+   - monthlyLabel é template, atualizado via updateLabels()
+   ========================================================== */
 
 function applyI18n(){
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
-    // monthly label é template, vamos renderizar via updateLabels()
     if (el === monthlyLabelEl) return;
     el.textContent = t(key);
   });
 
   langBtnLabel.textContent = t("ui.language");
-
-  // <html lang="">
   document.documentElement.lang = currentLang;
 
-  // Atualiza labels dependentes de data
   updateLabels();
 }
 
@@ -202,7 +213,6 @@ function updateLabels(){
   const mName = monthName(now);
   monthlyLabelEl.textContent = tTpl("labels.monthlyDoneTpl", { month: mName });
 
-  // Theme label também depende do tema atual
   updateThemeUI();
 }
 
@@ -211,7 +221,9 @@ function showStatus(show){
 }
 
 /* ==========================================================
-   Theme (Light/Dark)
+   8) THEME (Light/Dark)
+   - lê preferência do sistema
+   - aplica tema no <html data-theme="">
    ========================================================== */
 
 function getPreferredThemeFromSystem(){
@@ -246,7 +258,8 @@ function toggleTheme(){
 }
 
 /* ==========================================================
-   Language detection (same strategy as before)
+   9) LANGUAGE DETECTION
+   - tenta IP geo -> navigator -> timezone
    ========================================================== */
 
 async function detectLanguageAuto(){
@@ -365,7 +378,9 @@ async function initLanguage(){
 }
 
 /* ==========================================================
-   Language menu UI
+   10) LANGUAGE MENU UI
+   - cria os botões de idioma dinamicamente
+   - abre/fecha com ARIA atualizado
    ========================================================== */
 
 function buildLangMenu(){
@@ -424,16 +439,17 @@ function setLanguage(lang, { manual }){
 
   applyI18n();
   updateAllProgress({ force: true });
-  updateClock(); // reflete locale no relógio imediatamente
+  updateClock();
 }
 
 /* ==========================================================
-   Progress logic
+   11) PROGRESS LOGIC
+   - weekly / monthly / yearly
    ========================================================== */
 
 function startOfWeekMonday(date){
   const d = new Date(date);
-  const day = d.getDay(); // 0 Sun ... 6 Sat
+  const day = d.getDay();
   const diffToMonday = (day === 0) ? -6 : (1 - day);
   d.setDate(d.getDate() + diffToMonday);
   d.setHours(0,0,0,0);
@@ -442,8 +458,8 @@ function startOfWeekMonday(date){
 
 function weeklyProgress(now){
   const dow = now.getDay();
-  if (dow === 6) return 100; // sábado
-  if (dow === 0) return 0;   // domingo reset
+  if (dow === 6) return 100;
+  if (dow === 0) return 0;
 
   const weekStart = startOfWeekMonday(now);
   const dated = WEEKLY_CHECKPOINTS.map(cp => {
@@ -474,7 +490,7 @@ function monthlyProgress(now){
   const dim = daysInMonth(y, m);
   const perDay = 100 / dim;
 
-  const dayIndex = now.getDate(); // 1..dim
+  const dayIndex = now.getDate();
   const base = (dayIndex - 1) * perDay;
 
   const incPer = perDay / 4;
@@ -524,7 +540,7 @@ function yearlyProgress(now){
 }
 
 /* ==========================================================
-   Update loop
+   12) UPDATE LOOP (percentuais + watchdog)
    ========================================================== */
 
 function updateAllProgress({ force } = { force: false }){
@@ -539,13 +555,12 @@ function updateAllProgress({ force } = { force: false }){
     monthlyPercentEl.textContent = formatPercent(m);
     yearlyPercentEl.textContent = formatPercent(y);
 
-    // labels depend on month name
     updateLabels();
 
     lastSuccessfulUpdateAt = Date.now();
     showStatus(false);
   } catch (err){
-    // fail silent; watchdog can show status if needed
+    // fail silent
   } finally {
     if (force) checkStale();
   }
@@ -568,16 +583,13 @@ function startAutoUpdate(){
 }
 
 /* ==========================================================
-   Live clock
+   13) LIVE CLOCK
    ========================================================== */
 
 function formatClock(now){
   const locale = getLocaleForLang(currentLang);
-  // Date + Time with seconds; locale controls ordering
   const df = new Intl.DateTimeFormat(locale, { year: "numeric", month: "2-digit", day: "2-digit" });
   const tf = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-
-  // Keep " - " like the print
   return `${df.format(now)} - ${tf.format(now)}`;
 }
 
@@ -592,14 +604,228 @@ function startClock(){
 }
 
 /* ==========================================================
-   Events
+   14) BACKGROUND: Pixel Rain (Canvas) — TEMA-AWARE
+   - No dark: fundo escuro + fade preto + pixels mais vivos
+   - No light: fundo claro + fade branco + pixels mais suaves
+   - Reage instantaneamente ao toggle de tema
+   ========================================================== */
+
+function initPixelRainBackground(){
+  // (1) Elemento e contexto 2D
+  const canvas = document.getElementById("bg");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d", { alpha: false });
+
+  // (2) Cor base dos pixels
+  const BLUE = { r: 13, g: 34, b: 99 };
+
+  // (3) Config do efeito
+  const CONFIG = {
+    speedMin: 45,
+    speedMax: 180,
+    pixelMin: 1,
+    pixelMax: 4,
+    columnGapMin: 6,
+    columnGapMax: 22,
+    trailAlpha: 0.12,
+    glow: false,
+    dprCap: 2,
+    hazeStrength: 0.08,
+    burstMin: 2,
+    burstMax: 7
+  };
+
+  // (4) Estado interno do canvas
+  let W = 0, H = 0, dpr = 1;
+  let columns = [];
+  let lastT = performance.now();
+
+  // (5) Helpers internos
+  const clampLocal = (n, min, max) => Math.min(max, Math.max(min, n));
+  const rand = (min, max) => Math.random() * (max - min) + min;
+  const irand = (min, max) => Math.floor(rand(min, max + 1));
+
+  // (6) Detecta tema atual via atributo no <html>
+  function isLightTheme(){
+    return document.documentElement.getAttribute("data-theme") === "light";
+  }
+
+  // (7) Resize responsivo
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio || 1, CONFIG.dprCap);
+    W = Math.floor(window.innerWidth);
+    H = Math.floor(window.innerHeight);
+
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+
+    buildColumns();
+    clearInstant();
+  }
+
+  // (8) Colunas (densidade + comportamento)
+  function buildColumns(){
+    columns = [];
+    let x = 0;
+
+    while (x < W){
+      const gap = rand(CONFIG.columnGapMin, CONFIG.columnGapMax);
+
+      columns.push({
+        x,
+        y: rand(-H, H),
+        speed: rand(CONFIG.speedMin, CONFIG.speedMax),
+        size: rand(CONFIG.pixelMin, CONFIG.pixelMax),
+        burst: {
+          count: irand(CONFIG.burstMin, CONFIG.burstMax),
+          spread: rand(12, 80),
+          jitter: rand(0.2, 1.2),
+        }
+      });
+
+      x += gap;
+    }
+  }
+
+  // (9) Fundo base (DARK/LIGHT)
+  function clearInstant(){
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+
+    if (isLightTheme()){
+      g.addColorStop(0,   "rgb(245, 247, 255)");
+      g.addColorStop(0.6, "rgb(236, 240, 252)");
+      g.addColorStop(1,   "rgb(225, 232, 248)");
+    } else {
+      g.addColorStop(0,   "rgb(3, 5, 16)");
+      g.addColorStop(0.6, "rgb(2, 4, 14)");
+      g.addColorStop(1,   "rgb(1, 2, 10)");
+    }
+
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // (10) Fade/trail (DARK = preto / LIGHT = branco)
+  function fadeFrame(){
+    const a = CONFIG.trailAlpha;
+    ctx.fillStyle = isLightTheme()
+      ? `rgba(255,255,255,${a})`
+      : `rgba(0,0,0,${a})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // (11) Cor do pixel (boost controla brilho)
+  function pixelColor(alpha, boost = 1){
+    const r = Math.min(255, Math.floor(BLUE.r * boost));
+    const g = Math.min(255, Math.floor(BLUE.g * boost));
+    const b = Math.min(255, Math.floor(BLUE.b * boost));
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  // (12) Desenho de pixel (ajusta suavidade no modo claro)
+  function drawPixel(x, y, size, a){
+    if (isLightTheme()){
+      ctx.fillStyle = pixelColor(a * 0.68, 1.10);
+    } else {
+      ctx.fillStyle = pixelColor(a, 1.75);
+    }
+    ctx.fillRect((x | 0), (y | 0), size, size);
+  }
+
+  // (13) Loop principal
+  function step(t){
+    const dt = Math.min(0.033, (t - lastT) / 1000);
+    lastT = t;
+
+    fadeFrame();
+
+    // Haze (ajustado para não “lavar” no claro)
+      if (CONFIG.hazeStrength > 0){
+      const haze = ctx.createRadialGradient(
+        W * 0.5, H * 0.35, 80,
+        W * 0.5, H * 0.35, Math.max(W, H) * 0.9
+      );
+
+      if (isLightTheme()){
+        haze.addColorStop(0, `rgba(13,34,99,${CONFIG.hazeStrength * 0.35})`);
+        haze.addColorStop(1, "rgba(255,255,255,0)");
+      } else {
+        haze.addColorStop(0, `rgba(13,34,99,${CONFIG.hazeStrength})`);
+        haze.addColorStop(1, "rgba(0,0,0,0)");
+      }
+
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    for (const c of columns){
+      c.y += c.speed * dt;
+
+      const { count, spread, jitter } = c.burst;
+
+      for (let i = 0; i < count; i++){
+        const yy = c.y - i * rand(8, spread) + rand(-jitter, jitter);
+        if (yy < -30 || yy > H + 30) continue;
+
+        const a = isLightTheme() ? rand(0.05, 0.14) : rand(0.10, 0.35);
+        const sz = c.size;
+        const xoff = rand(-0.6, 0.6);
+
+        drawPixel(c.x + xoff, yy, sz, a);
+      }
+
+      if (c.y - 140 > H){
+        c.y = rand(-H * 0.45, -60);
+        c.speed = rand(CONFIG.speedMin, CONFIG.speedMax);
+        c.size = rand(CONFIG.pixelMin, CONFIG.pixelMax);
+        c.burst.count = irand(CONFIG.burstMin, CONFIG.burstMax);
+        c.burst.spread = rand(12, 90);
+        c.burst.jitter = rand(0.2, 1.4);
+      }
+    }
+
+    if (!document.hidden) requestAnimationFrame(step);
+  }
+
+  // (14) Reage ao tema mudar (toggle) sem recarregar
+  const themeObserver = new MutationObserver(() => {
+    clearInstant();
+  });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"]
+  });
+
+  // (15) Eventos do background
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden){
+      lastT = performance.now();
+      requestAnimationFrame(step);
+    }
+  });
+
+  window.addEventListener("resize", resize, { passive: true });
+
+  // (16) Boot
+  resize();
+  requestAnimationFrame(step);
+}
+
+/* ==========================================================
+   15) EVENTS (UI + ciclo de vida)
    ========================================================== */
 
 function bindEvents(){
-  // Theme toggle
+  // Tema
   themeBtn.addEventListener("click", toggleTheme);
 
-  // Language dropdown
+  // Idiomas
   langBtn.addEventListener("click", toggleLangMenu);
 
   document.addEventListener("click", (e) => {
@@ -613,7 +839,7 @@ function bindEvents(){
     if (e.key === "Escape" && !langMenu.hidden) closeLangMenu();
   });
 
-  // Update when returning to tab
+  // Retorna para aba/janela: força update
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible"){
       updateAllProgress({ force: true });
@@ -626,7 +852,7 @@ function bindEvents(){
     updateClock();
   });
 
-  // If system theme changes and user never manually chose, follow system
+  // Se o tema do sistema mudar e o user não travou manualmente, segue sistema
   if (window.matchMedia){
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     mq.addEventListener?.("change", () => {
@@ -639,7 +865,10 @@ function bindEvents(){
 }
 
 /* ==========================================================
-   Init
+   16) INIT (bootstrap do app)
+   - seta link do coffee
+   - aplica tema, idioma, menu
+   - liga background, binds e loops
    ========================================================== */
 
 (async function init(){
@@ -650,10 +879,12 @@ function bindEvents(){
   await initLanguage();
   buildLangMenu();
 
+  // Background animado
+  initPixelRainBackground();
+
   bindEvents();
   startAutoUpdate();
   startClock();
 
   lastSuccessfulUpdateAt = Date.now();
-
 })();
