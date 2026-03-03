@@ -1,32 +1,46 @@
-/* =========================================================
-   Partes do Tempo — styles.css (REVISADO)
-   - Com comentários por utilidade
-   - Com correções necessárias
-   - Com melhorias pro modo claro do Pixel Rain
-   ========================================================= */
+/* Partes do Tempo — styles.css (final + desktop tiers Opção B) */
 
-/* =========================
-   1) TOKENS GLOBAIS (variáveis)
-   - Raio de pills, sombra, fonte, alturas base
-   - Escala dos KPIs (percent/subtitle)
-   ========================= */
+/* 1) Tokens */
 :root{
   --radius-pill: 999px;
   --shadow: 0 8px 30px rgba(0,0,0,.35);
   --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
   --footer-h: 64px;
-
-  /* alturas/escala */
   --topbar-h: 72px;
 
-  /* +25% nos KPIs (percent + subtitle) */
-  --kpi-scale: 1.25;
+  /* Grande (default / >=1921px) */
+  --kpi-percent: clamp(96px, 9.5vw, 160px);
+  --kpi-text:    clamp(30px, 3.2vw, 56px);
+  --kpi-emoji:   clamp(24px, 2.6vw, 48px);
+
+  --hol-title:   clamp(30px, 3.0vw, 48px);
+  --hol-list:    clamp(18px, 1.6vw, 26px);
 }
 
-/* =========================
-   2) TOKENS POR TEMA
-   - Define paleta base pra UI (não pro canvas)
-   ========================= */
+/* ===== Tipografia DESKTOP por largura (Opção B) ===== */
+/* Médio (901–1920px) */
+@media (min-width: 901px) and (max-width: 1920px){
+  :root{
+    --kpi-percent: clamp(90px, 8.8vw, 152px);
+    --kpi-text:    clamp(28px, 3.0vw, 52px);
+    --kpi-emoji:   clamp(22px, 2.4vw, 45px);
+    --hol-title:   clamp(29px, 2.9vw, 45px);
+    --hol-list:    clamp(17px, 1.5vw, 24px);
+  }
+}
+
+/* Pequeno (901–1439px) */
+@media (min-width: 901px) and (max-width: 1439px){
+  :root{
+    --kpi-percent: clamp(83px, 7.9vw, 144px);
+    --kpi-text:    clamp(25px, 2.7vw, 50px);
+    --kpi-emoji:   clamp(20px, 2.1vw, 43px);
+    --hol-title:   clamp(27px, 2.7vw, 43px);
+    --hol-list:    clamp(16px, 1.44vw, 23px);
+  }
+}
+
+/* 2) Tokens por tema */
 html[data-theme="dark"]{
   --divider-style: dotted;
   --bg: #0b0b0c;
@@ -35,41 +49,25 @@ html[data-theme="dark"]{
   --muted: rgba(255,255,255,.70);
   --border: rgba(255,255,255,.18);
   --border2: rgba(255, 255, 255, 0.089);
-
-  /* Mantém compatibilidade com seu border na .app. */
   --frame: rgba(255,255,255,.12);
+  --m-sep: rgba(255,255,255,.16);
 }
-
 html[data-theme="light"]{
   --divider-style: dotted;
   --bg: #dbdbdb;
-  --surface: rgba(222, 222, 222, 0.099);
+  --surface: rgba(222, 222, 222, 0.326);
   --text: rgba(7, 9, 13, 0.941);
   --muted: rgba(10,12,18,.62);
   --border: rgb(10, 12, 18);
   --border2: rgba(10,12,18,.12);
-
-  /* (CORREÇÃO) Define --frame também no light */
   --frame: rgba(10,12,18,.12);
+  --m-sep: rgba(10,12,18,.20);
 }
 
-/* =========================
-   3) RESET + BASE
-   - Box sizing
-   - Altura total e tipografia
-   ========================= */
+/* 3) Base */
 *{ box-sizing: border-box; }
 html, body{ height: 100%; }
 
-/* =========================================================
-   3.1) BASE DO FUNDO (UI)
-   IMPORTANTE:
-   - Você tinha DOIS backgrounds competindo:
-     body { background: var(--bg); } + html,body { background:#030613; }
-   - Isso quebra o modo claro (fica escuro sempre).
-   - Agora: body usa var(--bg) normalmente.
-   - O canvas (#bg) é que cuida do “fundo bonito”.
-   ========================================================= */
 body{
   margin: 0;
   background: var(--bg);
@@ -77,36 +75,21 @@ body{
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  /* evita barra por causa do canvas fixo */
   overflow: hidden;
 }
 
-/* =========================
-   4) CONTAINER PRINCIPAL .app
-   - ocupa viewport
-   - borda e leve gradiente interno
-   - z-index alto para ficar acima do background
-   ========================= */
+/* 4) App */
 .app{
   height: 100vh;
   width: 100vw;
-
-  /* (CORREÇÃO) --frame agora existe */
   border: 2px solid var(--frame);
-
   background: linear-gradient(180deg, rgba(255,255,255,.06), transparent 30%);
   position: relative;
   overflow: hidden;
-
-  /* (SEGURANÇA) garante que UI nunca “some” atrás do canvas */
   z-index: 10;
 }
 
-/* =========================
-   5) TOPBAR
-   - Grid 3 colunas: left / center / right
-   ========================= */
+/* 5) Topbar */
 .topbar{
   height: var(--topbar-h);
   display: grid;
@@ -116,102 +99,124 @@ body{
   border-bottom: 1px var(--divider-style) var(--border2);
   gap: 10px;
 }
-
 .topbar__left{ display:flex; align-items:center; justify-content:flex-start; min-width: 0; }
 .topbar__center{ display:flex; align-items:center; justify-content:center; gap:10px; min-width: 0; }
 .topbar__right{ display:flex; align-items:center; justify-content:flex-end; min-width: 0; }
 
-/* =========================
-   6) RELÓGIO (texto central)
-   - Truncável e bold
-   ========================= */
 .clock__text{
   font-size: 24px;
   letter-spacing: .2px;
-  color: var(--text);
   white-space: nowrap;
-
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-
   font-weight: 700;
 }
 
-/* =========================
-   7) STAGE (conteúdo abaixo do header)
-   ========================= */
+/* 6) Stage */
 .stage{
   height: calc(100vh - var(--topbar-h));
   position: relative;
+  min-height: 0;
 }
 
-/* =========================
-   8) TILES (3 colunas desktop / 1 coluna mobile)
-   ========================= */
-.tiles{
+/* 7) Tiles (6) */
+.tiles--6{
   height: 100%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: 1fr 1fr;
+  min-height: 0;
 }
-
 .tile{
   display: grid;
   place-items: center;
   background: var(--surface);
+  min-height: 0;
 }
 
-.tile + .tile{
-  border-left: 1px var(--divider-style) var(--border2);
+/* Divisórias desktop */
+.tiles--6 .tile{
+  border-right: 1px var(--divider-style) var(--border2);
+  border-bottom: 1px var(--divider-style) var(--border2);
 }
+.tiles--6 .tile:nth-child(3),
+.tiles--6 .tile:nth-child(6){ border-right: 0; }
+.tiles--6 .tile:nth-child(4),
+.tiles--6 .tile:nth-child(5),
+.tiles--6 .tile:nth-child(6){ border-bottom: 0; }
 
+/* Inner base */
 .tile__inner{
   width: min(92%, 520px);
   text-align: center;
   padding: 18px 10px;
 }
 
-/* =========================
-   9) KPI: Percent grande
-   ========================= */
+/* 8) KPI */
 .percent{
-  font-size: clamp(
-    calc(70px * var(--kpi-scale)),
-    calc(10vw * var(--kpi-scale)),
-    calc(150px * var(--kpi-scale))
-  );
+  font-size: var(--kpi-percent);
   font-weight: 800;
   letter-spacing: -1.4px;
   line-height: 1;
   margin-bottom: 18px;
 }
-
-/* =========================
-   10) KPI: Subtitle
-   ========================= */
 .subtitle{
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  font-size: clamp(
-    calc(22px * var(--kpi-scale)),
-    calc(3.4vw * var(--kpi-scale)),
-    calc(52px * var(--kpi-scale))
-  );
+  font-size: var(--kpi-text);
   font-weight: 500;
   letter-spacing: .2px;
+}
+.subtitle--wrap{ max-width: 520px; flex-wrap: wrap; }
+.checkEmoji{ font-size: var(--kpi-emoji); line-height: 1; }
+
+/* 9) Feriados (desktop com scroll interno clean) */
+.tile__inner--holidays{
+  width: min(92%, 640px);
+  text-align: left;
+  height: 100%;
+  max-height: 100%;
+  overflow: auto;
+  scroll-behavior: smooth;
+  padding-right: 10px;
+  overscroll-behavior: contain;
+}
+
+/* Safari/iOS momentum */
+@supports (-webkit-overflow-scrolling: touch) {
+  .tile__inner--holidays,
+  .stage{
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* esconder scrollbar mantendo scroll */
+.tile__inner--holidays::-webkit-scrollbar{ width: 0; height: 0; }
+.tile__inner--holidays{ -ms-overflow-style: none; scrollbar-width: none; }
+
+.holidays__title{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--hol-title);
+  font-weight: 900;
+  margin-bottom: 16px;
+}
+.holidays__list{
+  margin: 0;
+  padding-left: 22px;
+  font-size: var(--hol-list);
+  line-height: 1.6;
   color: var(--text);
 }
+.holidays__list li{ margin: 4px 0; font-weight: 650; }
+.hDate{ font-weight: 950; letter-spacing: .3px; }
 
-.checkEmoji{
-  font-size: 0.9em;
-  line-height: 1;
-}
-
-/* =========================
-   11) PILLS (botões/links)
-   ========================= */
+/* 10) Pills */
 .pill{
   display: inline-flex;
   align-items: center;
@@ -223,16 +228,13 @@ body{
   color: var(--text);
   text-decoration: none;
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
   min-width: 0;
 }
-
 .pill--ghost{ background: transparent; }
 .pill--ghost:hover{ border-color: rgba(255,255,255,.26); }
-
-html[data-theme="light"] .pill--ghost:hover{
-  border-color: rgba(10,12,18,.30);
-}
+html[data-theme="light"] .pill--ghost:hover{ border-color: rgba(10,12,18,.30); }
 
 .pill__icon,
 .clock__icon{
@@ -242,7 +244,6 @@ html[data-theme="light"] .pill--ghost:hover{
   font-size: 24px;
   line-height: 1;
 }
-
 .pill__text{
   font-size: 24px;
   white-space: nowrap;
@@ -251,86 +252,30 @@ html[data-theme="light"] .pill--ghost:hover{
   min-width: 0;
   font-weight: 700;
 }
+.pill__chev{ opacity: .8; flex: 0 0 auto; }
+#langBtn:disabled{ opacity: .5; cursor: not-allowed; }
 
-.pill__chev{
-  opacity: .8;
-  flex: 0 0 auto;
-}
-
-/* =========================
-   12) CTA (Buy me a coffee) - desktop
-   ========================= */
+/* 11) CTA Coffee */
 .pill--coffee{
-  position: absolute;
+  position: fixed;
   right: 16px;
   bottom: 16px;
   font-size: 24px;
-  opacity: .92;
-  z-index: 10;
+  opacity: .96;
+  z-index: 80;
   white-space: nowrap;
-  font-weight: 700;
+  font-weight: 800;
+  background: rgba(0,0,0,.55);
 }
-
-.pill--coffee:hover{
-  opacity: 1;
-  border-color: rgba(255,255,255,.26);
+@supports ((-webkit-backdrop-filter: blur(10px)) or (backdrop-filter: blur(10px))) {
+  .pill--coffee{
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
 }
-html[data-theme="light"] .pill--coffee:hover{
-  border-color: rgba(10,12,18,.30);
-}
+html[data-theme="light"] .pill--coffee{ background: rgba(255,255,255,.78); }
 
-/* =========================
-   13) MENU DE IDIOMA
-   ========================= */
-.lang{ position: relative; }
-
-.menu{
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  min-width: 220px;
-  background: rgba(15,15,17,.98);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 6px;
-  box-shadow: var(--shadow);
-  z-index: 20;
-}
-html[data-theme="light"] .menu{
-  background: rgba(255,255,255,.98);
-}
-
-.menu__item{
-  font-size: 20px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 12px;
-  border-radius: 10px;
-  background: transparent;
-  border: 0;
-  color: var(--text);
-  cursor: pointer;
-  text-align: left;
-}
-
-.menu__item:hover{ background: rgba(255,255,255,.08); }
-html[data-theme="light"] .menu__item:hover{ background: rgba(10,12,18,.06); }
-
-.menu__item[aria-checked="true"]{ background: rgba(255,255,255,.10); }
-html[data-theme="light"] .menu__item[aria-checked="true"]{ background: rgba(10,12,18,.08); }
-
-.menu__code{
-  color: var(--muted);
-  font-size: 18px;
-  letter-spacing: .6px;
-}
-
-/* =========================
-   14) STATUS / WATCHDOG
-   ========================= */
+/* 12) Status */
 .status{
   position: absolute;
   left: 16px;
@@ -348,123 +293,102 @@ html[data-theme="light"] .status{
   color: rgba(10,12,18,.86);
 }
 
-/* =========================
-   15) A11Y: Focus visível
-   ========================= */
+/* 13) Focus */
 :focus-visible{
   outline: 2px solid rgba(90,145,255,.75);
   outline-offset: 2px;
 }
 
-/* =========================
-   16) RESPONSIVO <= 900px
-   ========================= */
+/* 14) Mobile */
 @media (max-width: 900px){
-  .tiles{ grid-template-columns: 1fr; }
-
-  .tile + .tile{
-    border-left: 0;
-    border-top: 1px var(--divider-style) var(--border2);
-  }
-
-  .topbar{
-    padding: 8px 10px;
-    gap: 8px;
-  }
-
-  .clock__text{
-    font-size: 14px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .pill{
-    padding: 8px 10px;
-    gap: 8px;
-    max-width: none;
-  }
-
-  .pill__text{ font-size: 16px; }
-
-  #langBtn .pill__text,
-  #themeBtn .pill__text{
-    display: none;
-  }
-
-  #langBtn .pill__chev{ display: none; }
-
-  #langBtn,
-  #themeBtn{
-    padding: 8px 10px;
-    gap: 0;
-    max-width: none;
-  }
-
-  #langBtn .pill__icon,
-  #themeBtn .pill__icon{
-    font-size: 18px;
-  }
-
   .stage{
+    overflow-y: auto;
     padding-bottom: calc(var(--footer-h) + env(safe-area-inset-bottom));
   }
 
+  .tiles--6{
+    height: auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  .tiles--6 .tile{ border: 0; }
+  .tiles--6 .tile .tile__inner{ border-bottom: 1.5px dotted var(--m-sep); }
+
+  .topbar{
+    border-bottom: 1.5px dotted var(--m-sep);
+    background: rgba(17, 16, 18, 0.279);
+  }
+  html[data-theme="light"] .topbar{ background: rgba(255, 255, 255, 0.11); }
+
+  .topbar{ padding: 8px 10px; gap: 8px; }
+  .clock__text{ font-size: 18px; font-weight: 900; }
+
+  .pill{ padding: 8px 10px; gap: 8px; max-width: none; }
+  .pill__text{ font-size: 16px; }
+
+  #langBtn .pill__text, #themeBtn .pill__text{ display: none; }
+  #langBtn .pill__chev{ display: none; }
+  #langBtn, #themeBtn{ padding: 8px 10px; gap: 0; max-width: none; }
+  #langBtn .pill__icon, #themeBtn .pill__icon{ font-size: 18px; }
+
+  .percent{ font-size: 92px; }
+  .subtitle{ font-size: 28px; }
+  .checkEmoji{ font-size: 26px; }
+
+  .tile__inner--holidays{
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+    overscroll-behavior: auto;
+  }
+
+  .holidays__title{
+    font-size: 24px;
+    font-weight: 900;
+    margin-bottom: 10px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+  .holidays__list{ font-size: 16px; line-height: 1.65; }
+  .holidays__list li{ font-weight: 750; }
+
   .pill--coffee{
     min-height: var(--footer-h);
-    padding: 10px 16px;
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-
+    left: 0; right: 0; bottom: 0;
     width: 100%;
     max-width: none;
-
-    transform: none;
-
     border-radius: 0;
     border: 0;
 
-    border-top: 1px solid var(--border2);
-
-    background: rgba(0,0,0,.55);
-    backdrop-filter: blur(10px);
-
+    border-top: 1.5px dotted var(--m-sep);
+    background: rgba(0,0,0,.72);
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
 
-    padding: 14px 16px;
+    padding: 12px 16px;
     box-sizing: border-box;
+    z-index: 80;
 
-    z-index: 50;
     font-weight: 700;
+    font-size: 18px;
   }
-
   html[data-theme="light"] .pill--coffee{
-    background: rgba(255,255,255,.78);
+    background: rgba(255,255,255,.88);
+  }
+
+  @supports ((-webkit-backdrop-filter: blur(6px)) or (backdrop-filter: blur(6px))) {
+    .pill--coffee{
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+    }
   }
 }
 
-/* =========================
-   17) EXTRA <= 420px
-   ========================= */
-@media (max-width: 420px){
-  #langBtn .pill__text{ display: none; }
-}
-
-/* =========================================================
-   18) BACKGROUND DINÂMICO (Pixel Rain)
-   - Canvas atrás da UI
-   - Vinheta e moldura por cima do canvas (mas atrás da UI)
-   - Ajustes específicos pro modo claro
-   ========================================================= */
-
-/* -------------------------
-   (18.1) Canvas full-screen
-   - Fica no fundo e não captura clique
-   ------------------------- */
+/* 15) Background */
 #bg{
   position: fixed;
   inset: 0;
@@ -472,44 +396,21 @@ html[data-theme="light"] .status{
   height: 100vh;
   display: block;
   pointer-events: none;
-
-  /* atrás de tudo */
   z-index: 0;
 }
-
-/* -------------------------
-   (18.2) Vinheta: DARK (default)
-   - Depth e glow central
-   - screen funciona muito bem no dark
-   ------------------------- */
 .vignette{
   position: fixed;
   inset: 0;
   pointer-events: none;
-
   background:
     radial-gradient(1200px 600px at 50% 35%, rgba(13,34,99,0.11), transparent 60%),
     radial-gradient(900px 900px at 50% 55%, transparent 55%, rgba(0,0,0,0.62) 100%);
-
   mix-blend-mode: screen;
-
-  /* acima do canvas */
   z-index: 1;
 }
-
-/* =========================================================
-   (18.4) AJUSTES PRO MODO CLARO (o que você pediu)
-   - No claro, “screen” pode lavar/estourar: usamos multiply
-   - Reduz contraste da vinheta e da moldura
-   ========================================================= */
 html[data-theme="light"] .vignette{
   background:
     radial-gradient(1200px 600px at 50% 35%, rgba(13,34,99,0.08), transparent 60%),
     radial-gradient(900px 900px at 50% 55%, transparent 60%, rgba(0,0,0,0.18) 100%);
-
   mix-blend-mode: multiply;
-}
-
-html[data-theme="light"] .frame{
-  box-shadow: inset 0 0 0 10px rgba(13,34,99,0.10);
 }
