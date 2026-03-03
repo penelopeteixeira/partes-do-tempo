@@ -1,137 +1,36 @@
-/* ==========================================================
-   1) CONFIG / CONSTANTES
-   - Links e chaves de storage
-   - Intervalos do app (progresso, relógio, watchdog)
-   ========================================================== */
-
+/* 1) Config */
 const COFFEE_LINK = "https://livepix.gg/partesdotempo";
-
-const STORAGE_LANG_KEY = "preferredLang_v1";
 const STORAGE_THEME_KEY = "preferredTheme_v1";
+const STORAGE_LANG_KEY = "preferredLang_v1";
 
-const UPDATE_INTERVAL_MS = 60_000;      // atualiza percentuais
-const CLOCK_INTERVAL_MS = 1_000;        // relógio ao vivo
-const STALE_AFTER_MS = 75 * 60_000;     // watchdog (se travar, mostra status)
+const CLOCK_INTERVAL_MS = 1000;
+const STALE_AFTER_MS = 75 * 60_000;
 
-/* ==========================================================
-   2) REGRAS DE PROGRESSO (Monthly & Yearly)
-   - Monthly: incrementos fracionados durante o dia
-   - Yearly: partes cumulativas ao longo do dia
-   ========================================================== */
+const WORK_START_H = 9;
+const LUNCH_START_H = 12;
+const LUNCH_END_H = 13;
+const WORK_END_H = 18;
 
-const MONTHLY_CHECKPOINTS = [
-  { h: 0,  m: 0 },  // update (no increment)
-  { h: 8,  m: 0 },  // + 1/4
-  { h: 10, m: 0 },  // + 2/4
-  { h: 13, m: 0 },  // update (no increment)
-  { h: 16, m: 0 },  // + 3/4
-  { h: 20, m: 0 },  // + 4/4
-];
-const MONTHLY_INCREMENT_AT = new Set([1, 2, 4, 5]);
+const FIVE_MIN_MS = 5 * 60 * 1000;
 
-const YEARLY_CHECKPOINTS = [
-  { h: 0,  m: 0 },  // 0/6
-  { h: 8,  m: 0 },  // 2/6
-  { h: 12, m: 0 },  // 4/6
-  { h: 18, m: 0 },  // 6/6
-];
-const YEARLY_CUM_PARTS = [0, 2, 4, 6];
-
-/* ==========================================================
-   3) WEEKLY: TABELA FIXA DE CHECKPOINTS
-   - Percentual em horários fixos (Mon–Fri)
-   - Sábado = 100, Domingo = 0 (reset)
-   ========================================================== */
-
-const WEEKLY_CHECKPOINTS = [
-  // Monday
-  { dow: 1, h: 9,  pct: 0.0 },
-  { dow: 1, h: 10, pct: 2.5 },
-  { dow: 1, h: 11, pct: 5.0 },
-  { dow: 1, h: 12, pct: 7.5 },
-  { dow: 1, h: 13, pct: 10.0 },
-  { dow: 1, h: 15, pct: 12.5 },
-  { dow: 1, h: 16, pct: 15.0 },
-  { dow: 1, h: 17, pct: 17.5 },
-  { dow: 1, h: 18, pct: 20.0 },
-
-  // Tuesday
-  { dow: 2, h: 9,  pct: 20.0 },
-  { dow: 2, h: 10, pct: 22.5 },
-  { dow: 2, h: 11, pct: 25.0 },
-  { dow: 2, h: 12, pct: 27.5 },
-  { dow: 2, h: 13, pct: 30.0 },
-  { dow: 2, h: 15, pct: 32.5 },
-  { dow: 2, h: 16, pct: 35.0 },
-  { dow: 2, h: 17, pct: 37.5 },
-  { dow: 2, h: 18, pct: 40.0 },
-
-  // Wednesday
-  { dow: 3, h: 9,  pct: 40.0 },
-  { dow: 3, h: 10, pct: 42.5 },
-  { dow: 3, h: 11, pct: 45.0 },
-  { dow: 3, h: 12, pct: 47.5 },
-  { dow: 3, h: 13, pct: 50.0 },
-  { dow: 3, h: 15, pct: 52.5 },
-  { dow: 3, h: 16, pct: 55.0 },
-  { dow: 3, h: 17, pct: 57.5 },
-  { dow: 3, h: 18, pct: 60.0 },
-
-  // Thursday
-  { dow: 4, h: 9,  pct: 60.0 },
-  { dow: 4, h: 10, pct: 62.5 },
-  { dow: 4, h: 11, pct: 65.0 },
-  { dow: 4, h: 12, pct: 67.5 },
-  { dow: 4, h: 13, pct: 70.0 },
-  { dow: 4, h: 15, pct: 72.5 },
-  { dow: 4, h: 16, pct: 75.0 },
-  { dow: 4, h: 17, pct: 77.5 },
-  { dow: 4, h: 18, pct: 80.0 },
-
-  // Friday
-  { dow: 5, h: 9,  pct: 80.0 },
-  { dow: 5, h: 10, pct: 82.5 },
-  { dow: 5, h: 11, pct: 85.0 },
-  { dow: 5, h: 12, pct: 87.5 },
-  { dow: 5, h: 13, pct: 90.0 },
-  { dow: 5, h: 15, pct: 92.5 },
-  { dow: 5, h: 16, pct: 95.0 },
-  { dow: 5, h: 17, pct: 97.5 },
-  { dow: 5, h: 18, pct: 100.0 },
-];
-
-/* ==========================================================
-   4) STATE (estado do app)
-   - idioma/tema atual
-   - timers (update e clock)
-   - watchdog timestamp
-   ========================================================== */
-
-let currentLang = "en";
+/* 2) State */
 let currentTheme = "dark";
+let currentLang = "pt";
 let lastSuccessfulUpdateAt = 0;
-let updateTimer = null;
 let clockTimer = null;
+let lastFiveBucket = null;
 
-/* ==========================================================
-   5) DOM (atalhos de elementos)
-   ========================================================== */
-
+/* 3) DOM */
 const $ = (sel) => document.querySelector(sel);
 
 const statusEl = $("#status");
+const statusTextEl = $("#statusText");
 
+const dailyPercentEl = $("#dailyPercent");
+const workweekPercentEl = $("#workweekPercent");
 const weeklyPercentEl = $("#weeklyPercent");
 const monthlyPercentEl = $("#monthlyPercent");
 const yearlyPercentEl = $("#yearlyPercent");
-
-const weeklyLabelEl = $("#weeklyLabel");
-const monthlyLabelEl = $("#monthlyLabel");
-const yearlyLabelEl = $("#yearlyLabel");
-
-const langBtn = $("#langBtn");
-const langBtnLabel = $("#langBtnLabel");
-const langMenu = $("#langMenu");
 
 const themeBtn = $("#themeBtn");
 const themeLabelEl = $("#themeLabel");
@@ -140,15 +39,91 @@ const themeIconEl = $("#themeIcon");
 const liveClockEl = $("#liveClock");
 const coffeeBtn = $("#coffeeBtn");
 
-/* ==========================================================
-   6) HELPERS (utilidades gerais)
-   - clamp, data segura, locale por idioma, i18n helpers
-   ========================================================== */
+const langBtn = $("#langBtn");
+const langBtnLabelEl = $("#langBtnLabel");
+const langMenuEl = $("#langMenu");
 
+const dailyLabelEl = $("#dailyLabel");
+const workweekLabelEl = $("#workweekLabel");
+const weeklyLabelEl = $("#weeklyLabel");
+const monthlyLabelEl = $("#monthlyLabel");
+const yearlyLabelEl = $("#yearlyLabel");
+
+const holidaysTitleEl = $("#holidaysTitle");
+const coffeeLabelEl = $("#coffeeLabel");
+
+/* 4) Helpers */
 function clamp(n, min, max){ return Math.min(max, Math.max(min, n)); }
 function safeNow(){ return new Date(); }
+function showStatus(show){ statusEl.hidden = !show; }
 
-function getLocaleForLang(lang){
+function formatPercentInt(value){
+  const v = Math.round(value);
+  return `${clamp(v, 0, 100)}%`;
+}
+
+function formatClock(now){
+  const df = new Intl.DateTimeFormat("pt-BR", { year: "numeric", month: "2-digit", day: "2-digit" });
+  const tf = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return `${df.format(now)} - ${tf.format(now)}`;
+}
+
+function startOfDay(date){
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function startOfMonth(date){
+  const d = new Date(date.getFullYear(), date.getMonth(), 1);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function endOfMonth(date){
+  const d = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function startOfYear(date){
+  const d = new Date(date.getFullYear(), 0, 1);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function endOfYear(date){
+  const d = new Date(date.getFullYear() + 1, 0, 1);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function startOfWeekMonday(date){
+  const d = startOfDay(date);
+  const day = d.getDay();
+  const diffToMonday = (day === 0) ? -6 : (1 - day);
+  d.setDate(d.getDate() + diffToMonday);
+  return d;
+}
+
+function minutesBetween(a, b){
+  return Math.max(0, (b.getTime() - a.getTime()) / 60000);
+}
+
+function overlapsMinutes(rangeStart, rangeEnd, windowStart, windowEnd){
+  const s = Math.max(rangeStart.getTime(), windowStart.getTime());
+  const e = Math.min(rangeEnd.getTime(), windowEnd.getTime());
+  return Math.max(0, (e - s) / 60000);
+}
+
+/* 4.1) i18n */
+function normalizeLang(code){
+  if (!code) return "pt";
+  const base = String(code).toLowerCase().split("-")[0];
+  return SUPPORTED_LANGS.includes(base) ? base : "pt";
+}
+
+function localeFor(lang){
   const map = {
     pt: "pt-BR",
     es: "es-ES",
@@ -159,73 +134,279 @@ function getLocaleForLang(lang){
     zh: "zh-CN",
     ja: "ja-JP",
   };
-  return map[lang] || "en-US";
+  return map[lang] || "pt-BR";
 }
 
-function t(path){
+function t(path, vars){
+  const dict = (TRANSLATIONS && TRANSLATIONS[currentLang]) ? TRANSLATIONS[currentLang] : TRANSLATIONS.pt;
   const parts = path.split(".");
-  let obj = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
-  for (const p of parts) obj = obj?.[p];
-  return obj ?? path;
-}
-
-function tTpl(path, vars){
-  let s = t(path);
-  for (const [k,v] of Object.entries(vars || {})){
-    s = s.replaceAll(`{${k}}`, String(v));
+  let val = dict;
+  for (const p of parts){
+    val = val && Object.prototype.hasOwnProperty.call(val, p) ? val[p] : undefined;
   }
-  return s;
+
+  if (typeof val !== "string"){
+    let v2 = TRANSLATIONS.pt;
+    for (const p of parts){
+      v2 = v2 && Object.prototype.hasOwnProperty.call(v2, p) ? v2[p] : undefined;
+    }
+    val = (typeof v2 === "string") ? v2 : path;
+  }
+
+  if (vars && typeof val === "string"){
+    for (const k of Object.keys(vars)){
+      val = val.replaceAll(`{${k}}`, String(vars[k]));
+    }
+  }
+  return val;
 }
 
-function formatPercent(value){
-  const locale = getLocaleForLang(currentLang);
-  const nf = new Intl.NumberFormat(locale, { minimumFractionDigits: 0, maximumFractionDigits: 1 });
-  return `${nf.format(value)}%`;
-}
-
-function monthName(now){
-  const locale = getLocaleForLang(currentLang);
-  const fmt = new Intl.DateTimeFormat(locale, { month: "long" });
+function getMonthName(now){
+  const fmt = new Intl.DateTimeFormat(localeFor(currentLang), { month: "long" });
   return fmt.format(now);
 }
 
-/* ==========================================================
-   7) I18N APPLY
-   - aplica textos por data-i18n
-   - monthlyLabel é template, atualizado via updateLabels()
-   ========================================================== */
+function setLabelKeepingEmoji(containerEl, newText){
+  if (!containerEl) return;
 
-function applyI18n(){
-  document.querySelectorAll("[data-i18n]").forEach((el) => {
-    const key = el.getAttribute("data-i18n");
-    if (el === monthlyLabelEl) return;
-    el.textContent = t(key);
-  });
+  const textNode = Array.from(containerEl.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
 
-  langBtnLabel.textContent = t("ui.language");
-  document.documentElement.lang = currentLang;
+  if (textNode){
+    textNode.nodeValue = newText;
+    return;
+  }
 
-  updateLabels();
+  containerEl.insertBefore(document.createTextNode(newText), containerEl.firstChild);
 }
 
-function updateLabels(){
-  const now = safeNow();
-  const mName = monthName(now);
-  monthlyLabelEl.textContent = tTpl("labels.monthlyDoneTpl", { month: mName });
-
+function updateTexts(){
+  if (langBtnLabelEl) langBtnLabelEl.textContent = t("ui.language");
   updateThemeUI();
+
+  setLabelKeepingEmoji(dailyLabelEl, t("labels.dailyDone"));
+  setLabelKeepingEmoji(workweekLabelEl, t("labels.workweekDone"));
+  setLabelKeepingEmoji(weeklyLabelEl, t("labels.weeklyDone"));
+
+  const month = getMonthName(safeNow());
+  setLabelKeepingEmoji(monthlyLabelEl, t("labels.monthlyDoneTpl", { month }));
+  setLabelKeepingEmoji(yearlyLabelEl, t("labels.yearlyDone"));
+
+  if (holidaysTitleEl) holidaysTitleEl.textContent = t("labels.holidaysTitle");
+  if (coffeeLabelEl) coffeeLabelEl.textContent = t("labels.coffee");
+  if (statusTextEl) statusTextEl.textContent = t("errors.paused");
+
+  if (langBtn){
+    langBtn.setAttribute("aria-label", t("ui.language"));
+    langBtn.title = t("ui.language");
+  }
 }
 
-function showStatus(show){
-  statusEl.hidden = !show;
+function applyLang(lang){
+  currentLang = normalizeLang(lang);
+  document.documentElement.setAttribute("lang", currentLang);
+  updateTexts();
 }
 
-/* ==========================================================
-   8) THEME (Light/Dark)
-   - lê preferência do sistema
-   - aplica tema no <html data-theme="">
-   ========================================================== */
+function initLang(){
+  const saved = localStorage.getItem(STORAGE_LANG_KEY);
+  if (saved){
+    applyLang(saved);
+    return;
+  }
+  const fromNav = normalizeLang(navigator.language || navigator.userLanguage || "pt-BR");
+  applyLang(fromNav);
+}
 
+function setLang(lang){
+  const next = normalizeLang(lang);
+  localStorage.setItem(STORAGE_LANG_KEY, next);
+  applyLang(next);
+  closeLangMenu();
+}
+
+function toggleLangMenu(){
+  const open = !langMenuEl.hidden;
+  if (open) closeLangMenu();
+  else openLangMenu();
+}
+
+function openLangMenu(){
+  langMenuEl.hidden = false;
+  langBtn.setAttribute("aria-expanded", "true");
+}
+
+function closeLangMenu(){
+  langMenuEl.hidden = true;
+  langBtn.setAttribute("aria-expanded", "false");
+}
+
+function buildLangMenu(){
+  if (!langMenuEl) return;
+
+  langMenuEl.innerHTML = "";
+
+  const wrap = document.createElement("div");
+  wrap.style.display = "grid";
+  wrap.style.gap = "8px";
+  wrap.style.padding = "10px";
+  wrap.style.position = "absolute";
+  wrap.style.right = "14px";
+  wrap.style.top = "72px";
+  wrap.style.zIndex = "999";
+  wrap.style.border = "1px solid var(--border)";
+  wrap.style.borderRadius = "12px";
+  wrap.style.background = "rgba(0,0,0,.55)";
+  wrap.style.backdropFilter = "blur(10px)";
+  wrap.style.webkitBackdropFilter = "blur(10px)";
+
+  if (document.documentElement.getAttribute("data-theme") === "light"){
+    wrap.style.background = "rgba(255,255,255,.88)";
+  }
+
+  for (const code of SUPPORTED_LANGS){
+    const meta = LANG_META[code] || { native: code.toUpperCase() };
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("role", "menuitemradio");
+    btn.setAttribute("aria-checked", code === currentLang ? "true" : "false");
+    btn.style.display = "flex";
+    btn.style.alignItems = "center";
+    btn.style.justifyContent = "space-between";
+    btn.style.gap = "10px";
+    btn.style.padding = "10px 12px";
+    btn.style.borderRadius = "10px";
+    btn.style.border = "1px solid var(--border2)";
+    btn.style.background = "transparent";
+    btn.style.color = "var(--text)";
+    btn.style.cursor = "pointer";
+    btn.style.font = "inherit";
+    btn.style.fontWeight = "700";
+
+    const left = document.createElement("span");
+    left.textContent = meta.native;
+
+    const right = document.createElement("span");
+    right.textContent = code === currentLang ? "✓" : "";
+
+    btn.addEventListener("click", () => setLang(code));
+    btn.addEventListener("mouseenter", () => { btn.style.borderColor = "rgba(255,255,255,.26)"; });
+    btn.addEventListener("mouseleave", () => { btn.style.borderColor = "var(--border2)"; });
+
+    btn.appendChild(left);
+    btn.appendChild(right);
+    wrap.appendChild(btn);
+  }
+
+  langMenuEl.appendChild(wrap);
+
+  setTimeout(() => {
+    const onDocClick = (e) => {
+      if (!langMenuEl.contains(e.target) && e.target !== langBtn && !langBtn.contains(e.target)){
+        closeLangMenu();
+        document.removeEventListener("click", onDocClick, true);
+      }
+    };
+    document.addEventListener("click", onDocClick, true);
+  }, 0);
+}
+
+/* 5) Progress */
+function dailyProgress(now){
+  const dayStart = startOfDay(now);
+  const mins = minutesBetween(dayStart, now);
+  const buckets = Math.floor(mins / 5);
+  const val = buckets * (100 / 288);
+  return clamp(val, 0, 100);
+}
+
+function weeklyProgress(now){
+  const weekStart = startOfWeekMonday(now);
+  const mins = minutesBetween(weekStart, now);
+  const total = 7 * 24 * 60;
+  const buckets = Math.floor(mins / 5);
+  const val = buckets * (100 / (total / 5));
+  return clamp(val, 0, 100);
+}
+
+function workweekProgress(now){
+  const weekStart = startOfWeekMonday(now);
+  const TOTAL_USEFUL_MIN = 5 * 8 * 60;
+
+  let useful = 0;
+
+  const monWorkStart = new Date(weekStart);
+  monWorkStart.setHours(WORK_START_H, 0, 0, 0);
+  if (now < monWorkStart) return 0;
+
+  for (let i = 0; i < 5; i++){
+    const day = new Date(weekStart);
+    day.setDate(weekStart.getDate() + i);
+
+    const aStart = new Date(day); aStart.setHours(WORK_START_H, 0, 0, 0);
+    const aEnd   = new Date(day); aEnd.setHours(LUNCH_START_H, 0, 0, 0);
+
+    const bStart = new Date(day); bStart.setHours(LUNCH_END_H, 0, 0, 0);
+    const bEnd   = new Date(day); bEnd.setHours(WORK_END_H, 0, 0, 0);
+
+    const dayRangeStart = new Date(day); dayRangeStart.setHours(0,0,0,0);
+    const dayRangeEnd = new Date(day); dayRangeEnd.setHours(23,59,59,999);
+
+    if (day > now) break;
+
+    const countEnd = (day.toDateString() === now.toDateString()) ? now : dayRangeEnd;
+
+    useful += overlapsMinutes(dayRangeStart, countEnd, aStart, aEnd);
+    useful += overlapsMinutes(dayRangeStart, countEnd, bStart, bEnd);
+  }
+
+  const buckets = Math.floor(useful / 5);
+  const val = buckets * (100 / (TOTAL_USEFUL_MIN / 5));
+  return clamp(val, 0, 100);
+}
+
+function monthlyProgress(now){
+  const start = startOfMonth(now);
+  const end = endOfMonth(now);
+  const totalMin = minutesBetween(start, end);
+  const passedMin = minutesBetween(start, now);
+  const buckets = Math.floor(passedMin / 5);
+  const val = buckets * (100 / (totalMin / 5));
+  return clamp(val, 0, 100);
+}
+
+function yearlyProgress(now){
+  const start = startOfYear(now);
+  const end = endOfYear(now);
+  const totalMin = minutesBetween(start, end);
+  const passedMin = minutesBetween(start, now);
+  const buckets = Math.floor(passedMin / 5);
+  const val = buckets * (100 / (totalMin / 5));
+  return clamp(val, 0, 100);
+}
+
+/* 6) Render + watchdog */
+function updateAllProgress(){
+  try{
+    const now = safeNow();
+    dailyPercentEl.textContent = formatPercentInt(dailyProgress(now));
+    workweekPercentEl.textContent = formatPercentInt(workweekProgress(now));
+    weeklyPercentEl.textContent = formatPercentInt(weeklyProgress(now));
+    monthlyPercentEl.textContent = formatPercentInt(monthlyProgress(now));
+    yearlyPercentEl.textContent = formatPercentInt(yearlyProgress(now));
+
+    updateTexts();
+
+    lastSuccessfulUpdateAt = Date.now();
+    showStatus(false);
+  } catch (e) {}
+}
+
+function checkStale(){
+  const stale = (Date.now() - lastSuccessfulUpdateAt) > STALE_AFTER_MS;
+  showStatus(stale);
+}
+
+/* 7) Theme */
 function getPreferredThemeFromSystem(){
   return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
@@ -233,6 +414,9 @@ function getPreferredThemeFromSystem(){
 function applyTheme(theme){
   currentTheme = (theme === "light") ? "light" : "dark";
   document.documentElement.setAttribute("data-theme", currentTheme);
+
+  buildLangMenu();
+
   updateThemeUI();
 }
 
@@ -257,344 +441,25 @@ function toggleTheme(){
   applyTheme(next);
 }
 
-/* ==========================================================
-   9) LANGUAGE DETECTION
-   - tenta IP geo -> navigator -> timezone
-   ========================================================== */
+/* 8) Clock (gatilho 5min) */
+function updateClock(){
+  const now = safeNow();
+  liveClockEl.textContent = formatClock(now);
 
-async function detectLanguageAuto(){
-  const ipLang = await detectByIPGeo().catch(() => null);
-  if (ipLang) return ipLang;
+  const bucket = Math.floor(now.getTime() / FIVE_MIN_MS);
 
-  const navLang = detectByNavigator();
-  if (navLang) return navLang;
-
-  const tzLang = detectByTimeZone();
-  if (tzLang) return tzLang;
-
-  return "en";
-}
-
-function detectByNavigator(){
-  const candidates = []
-    .concat(navigator.languages || [])
-    .concat(navigator.language ? [navigator.language] : [])
-    .filter(Boolean);
-
-  for (const c of candidates){
-    const base = String(c).toLowerCase().split("-")[0];
-    if (SUPPORTED_LANGS.includes(base)) return base;
-  }
-  return null;
-}
-
-function detectByTimeZone(){
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-  if (tz.startsWith("America/Sao_Paulo")) return "pt";
-  if (tz.startsWith("America/") || tz.startsWith("Europe/London")) return "en";
-  if (tz.startsWith("Europe/Madrid") || tz.startsWith("America/Mexico_City")) return "es";
-  if (tz.startsWith("Europe/Paris")) return "fr";
-  if (tz.startsWith("Europe/Berlin")) return "de";
-  if (tz.startsWith("Europe/Rome")) return "it";
-  if (tz.startsWith("Asia/Shanghai") || tz.startsWith("Asia/Hong_Kong")) return "zh";
-  if (tz.startsWith("Asia/Tokyo")) return "ja";
-  return null;
-}
-
-async function detectByIPGeo(){
-  const r1 = await fetchWithTimeout("https://ipapi.co/json/", 1500).catch(() => null);
-  const lang1 = mapGeoToLang(r1);
-  if (lang1) return lang1;
-
-  const r2 = await fetchWithTimeout("https://ipwho.is/?fields=success,country_code,languages", 1500).catch(() => null);
-  const lang2 = mapGeoToLang(r2);
-  if (lang2) return lang2;
-
-  return null;
-}
-
-function mapGeoToLang(data){
-  if (!data) return null;
-  if (typeof data.success === "boolean" && data.success === false) return null;
-
-  const country = (data.country_code || data.country || "").toString().toUpperCase();
-
-  const langsRaw = data.languages;
-  if (langsRaw){
-    const first = String(langsRaw).split(",")[0].trim().toLowerCase();
-    const base = first.split("-")[0];
-    if (SUPPORTED_LANGS.includes(base)) return base;
-  }
-
-  const PT = new Set(["BR","PT","AO","MZ","CV","GW","ST","TL"]);
-  const ES = new Set(["ES","MX","AR","CO","CL","PE","VE","EC","GT","CU","BO","DO","HN","PY","SV","NI","CR","PA","UY"]);
-  const FR = new Set(["FR","BE","CH","CA","LU","MC"]);
-  const DE = new Set(["DE","AT","CH","LU"]);
-  const IT = new Set(["IT","SM","VA","CH"]);
-  const ZH = new Set(["CN","TW","HK","MO"]);
-  const JA = new Set(["JP"]);
-
-  if (PT.has(country)) return "pt";
-  if (ES.has(country)) return "es";
-  if (FR.has(country)) return "fr";
-  if (DE.has(country)) return "de";
-  if (IT.has(country)) return "it";
-  if (ZH.has(country)) return "zh";
-  if (JA.has(country)) return "ja";
-
-  return "en";
-}
-
-async function fetchWithTimeout(url, timeoutMs){
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), timeoutMs);
-
-  try{
-    const res = await fetch(url, {
-      method: "GET",
-      mode: "cors",
-      cache: "no-store",
-      signal: ctrl.signal,
-      headers: { "Accept": "application/json" },
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } finally {
-    clearTimeout(id);
-  }
-}
-
-async function initLanguage(){
-  const saved = localStorage.getItem(STORAGE_LANG_KEY);
-  if (saved && SUPPORTED_LANGS.includes(saved)){
-    currentLang = saved;
-    applyI18n();
+  if (lastFiveBucket === null){
+    lastFiveBucket = bucket;
+    updateAllProgress();
+    checkStale();
     return;
   }
 
-  const auto = await detectLanguageAuto().catch(() => "en");
-  currentLang = SUPPORTED_LANGS.includes(auto) ? auto : "en";
-  applyI18n();
-}
-
-/* ==========================================================
-   10) LANGUAGE MENU UI
-   - cria os botões de idioma dinamicamente
-   - abre/fecha com ARIA atualizado
-   ========================================================== */
-
-function buildLangMenu(){
-  langMenu.innerHTML = "";
-
-  for (const code of SUPPORTED_LANGS){
-    const meta = LANG_META[code];
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "menu__item";
-    btn.setAttribute("role", "menuitemradio");
-    btn.setAttribute("aria-checked", String(code === currentLang));
-    btn.dataset.lang = code;
-
-    const left = document.createElement("span");
-    left.textContent = meta?.native || code;
-
-    const right = document.createElement("span");
-    right.className = "menu__code";
-    right.textContent = code.toUpperCase();
-
-    btn.append(left, right);
-
-    btn.addEventListener("click", () => {
-      setLanguage(code, { manual: true });
-      closeLangMenu();
-    });
-
-    langMenu.appendChild(btn);
-  }
-}
-
-function openLangMenu(){
-  buildLangMenu();
-  langMenu.hidden = false;
-  langBtn.setAttribute("aria-expanded", "true");
-}
-
-function closeLangMenu(){
-  langMenu.hidden = true;
-  langBtn.setAttribute("aria-expanded", "false");
-}
-
-function toggleLangMenu(){
-  if (langMenu.hidden) openLangMenu();
-  else closeLangMenu();
-}
-
-function setLanguage(lang, { manual }){
-  if (!SUPPORTED_LANGS.includes(lang)) lang = "en";
-  currentLang = lang;
-
-  if (manual){
-    localStorage.setItem(STORAGE_LANG_KEY, lang);
-  }
-
-  applyI18n();
-  updateAllProgress({ force: true });
-  updateClock();
-}
-
-/* ==========================================================
-   11) PROGRESS LOGIC
-   - weekly / monthly / yearly
-   ========================================================== */
-
-function startOfWeekMonday(date){
-  const d = new Date(date);
-  const day = d.getDay();
-  const diffToMonday = (day === 0) ? -6 : (1 - day);
-  d.setDate(d.getDate() + diffToMonday);
-  d.setHours(0,0,0,0);
-  return d;
-}
-
-function weeklyProgress(now){
-  const dow = now.getDay();
-  if (dow === 6) return 100;
-  if (dow === 0) return 0;
-
-  const weekStart = startOfWeekMonday(now);
-  const dated = WEEKLY_CHECKPOINTS.map(cp => {
-    const dt = new Date(weekStart);
-    dt.setDate(weekStart.getDate() + (cp.dow - 1));
-    dt.setHours(cp.h, 0, 0, 0);
-    return { t: dt.getTime(), pct: cp.pct };
-  });
-
-  const nowT = now.getTime();
-  if (nowT < dated[0].t) return 0;
-
-  let last = 0;
-  for (const p of dated){
-    if (p.t <= nowT) last = p.pct;
-    else break;
-  }
-  return clamp(last, 0, 100);
-}
-
-function daysInMonth(y, mIndex){
-  return new Date(y, mIndex + 1, 0).getDate();
-}
-
-function monthlyProgress(now){
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const dim = daysInMonth(y, m);
-  const perDay = 100 / dim;
-
-  const dayIndex = now.getDate();
-  const base = (dayIndex - 1) * perDay;
-
-  const incPer = perDay / 4;
-
-  let incCount = 0;
-  for (let i = 0; i < MONTHLY_CHECKPOINTS.length; i++){
-    const { h, m: mm } = MONTHLY_CHECKPOINTS[i];
-    const cp = new Date(y, m, dayIndex, h, mm, 0, 0);
-    if (now >= cp && MONTHLY_INCREMENT_AT.has(i)) incCount++;
-  }
-
-  const val = base + (incCount * incPer);
-  return clamp(val, 0, 100);
-}
-
-function isLeapYear(y){
-  return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
-}
-
-function dayOfYear(date){
-  const start = new Date(date.getFullYear(), 0, 1);
-  start.setHours(0,0,0,0);
-  const d = new Date(date);
-  d.setHours(0,0,0,0);
-  const diff = d - start;
-  return Math.floor(diff / 86400000) + 1;
-}
-
-function yearlyProgress(now){
-  const y = now.getFullYear();
-  const totalDays = isLeapYear(y) ? 366 : 365;
-  const perDay = 100 / totalDays;
-
-  const doy = dayOfYear(now);
-  const base = (doy - 1) * perDay;
-
-  let parts = 0;
-  for (let i = 0; i < YEARLY_CHECKPOINTS.length; i++){
-    const { h, m } = YEARLY_CHECKPOINTS[i];
-    const cp = new Date(y, now.getMonth(), now.getDate(), h, m, 0, 0);
-    if (now >= cp) parts = YEARLY_CUM_PARTS[i];
-  }
-  parts = clamp(parts, 0, 6);
-
-  const val = base + (perDay * (parts / 6));
-  return clamp(val, 0, 100);
-}
-
-/* ==========================================================
-   12) UPDATE LOOP (percentuais + watchdog)
-   ========================================================== */
-
-function updateAllProgress({ force } = { force: false }){
-  try{
-    const now = safeNow();
-
-    const w = weeklyProgress(now);
-    const m = monthlyProgress(now);
-    const y = yearlyProgress(now);
-
-    weeklyPercentEl.textContent = formatPercent(w);
-    monthlyPercentEl.textContent = formatPercent(m);
-    yearlyPercentEl.textContent = formatPercent(y);
-
-    updateLabels();
-
-    lastSuccessfulUpdateAt = Date.now();
-    showStatus(false);
-  } catch (err){
-    // fail silent
-  } finally {
-    if (force) checkStale();
-  }
-}
-
-function checkStale(){
-  const stale = (Date.now() - lastSuccessfulUpdateAt) > STALE_AFTER_MS;
-  showStatus(stale);
-}
-
-function startAutoUpdate(){
-  if (updateTimer) clearInterval(updateTimer);
-
-  updateAllProgress({ force: true });
-
-  updateTimer = setInterval(() => {
+  if (bucket !== lastFiveBucket){
+    lastFiveBucket = bucket;
     updateAllProgress();
     checkStale();
-  }, UPDATE_INTERVAL_MS);
-}
-
-/* ==========================================================
-   13) LIVE CLOCK
-   ========================================================== */
-
-function formatClock(now){
-  const locale = getLocaleForLang(currentLang);
-  const df = new Intl.DateTimeFormat(locale, { year: "numeric", month: "2-digit", day: "2-digit" });
-  const tf = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  return `${df.format(now)} - ${tf.format(now)}`;
-}
-
-function updateClock(){
-  liveClockEl.textContent = formatClock(safeNow());
+  }
 }
 
 function startClock(){
@@ -603,24 +468,14 @@ function startClock(){
   clockTimer = setInterval(updateClock, CLOCK_INTERVAL_MS);
 }
 
-/* ==========================================================
-   14) BACKGROUND: Pixel Rain (Canvas) — TEMA-AWARE
-   - No dark: fundo escuro + fade preto + pixels mais vivos
-   - No light: fundo claro + fade branco + pixels mais suaves
-   - Reage instantaneamente ao toggle de tema
-   ========================================================== */
-
+/* 9) Pixel Rain */
 function initPixelRainBackground(){
-  // (1) Elemento e contexto 2D
   const canvas = document.getElementById("bg");
   if (!canvas) return;
 
   const ctx = canvas.getContext("2d", { alpha: false });
-
-  // (2) Cor base dos pixels
   const BLUE = { r: 13, g: 34, b: 99 };
 
-  // (3) Config do efeito
   const CONFIG = {
     speedMin: 45,
     speedMax: 180,
@@ -629,29 +484,23 @@ function initPixelRainBackground(){
     columnGapMin: 6,
     columnGapMax: 22,
     trailAlpha: 0.12,
-    glow: false,
     dprCap: 2,
     hazeStrength: 0.08,
     burstMin: 2,
     burstMax: 7
   };
 
-  // (4) Estado interno do canvas
   let W = 0, H = 0, dpr = 1;
   let columns = [];
   let lastT = performance.now();
 
-  // (5) Helpers internos
-  const clampLocal = (n, min, max) => Math.min(max, Math.max(min, n));
   const rand = (min, max) => Math.random() * (max - min) + min;
   const irand = (min, max) => Math.floor(rand(min, max + 1));
 
-  // (6) Detecta tema atual via atributo no <html>
   function isLightTheme(){
     return document.documentElement.getAttribute("data-theme") === "light";
   }
 
-  // (7) Resize responsivo
   function resize(){
     dpr = Math.min(window.devicePixelRatio || 1, CONFIG.dprCap);
     W = Math.floor(window.innerWidth);
@@ -669,14 +518,11 @@ function initPixelRainBackground(){
     clearInstant();
   }
 
-  // (8) Colunas (densidade + comportamento)
   function buildColumns(){
     columns = [];
     let x = 0;
-
     while (x < W){
       const gap = rand(CONFIG.columnGapMin, CONFIG.columnGapMax);
-
       columns.push({
         x,
         y: rand(-H, H),
@@ -688,39 +534,31 @@ function initPixelRainBackground(){
           jitter: rand(0.2, 1.2),
         }
       });
-
       x += gap;
     }
   }
 
-  // (9) Fundo base (DARK/LIGHT)
   function clearInstant(){
     const g = ctx.createLinearGradient(0, 0, 0, H);
-
     if (isLightTheme()){
-      g.addColorStop(0,   "rgb(245, 247, 255)");
+      g.addColorStop(0, "rgb(245, 247, 255)");
       g.addColorStop(0.6, "rgb(236, 240, 252)");
-      g.addColorStop(1,   "rgb(225, 232, 248)");
+      g.addColorStop(1, "rgb(225, 232, 248)");
     } else {
-      g.addColorStop(0,   "rgb(3, 5, 16)");
+      g.addColorStop(0, "rgb(3, 5, 16)");
       g.addColorStop(0.6, "rgb(2, 4, 14)");
-      g.addColorStop(1,   "rgb(1, 2, 10)");
+      g.addColorStop(1, "rgb(1, 2, 10)");
     }
-
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
   }
 
-  // (10) Fade/trail (DARK = preto / LIGHT = branco)
   function fadeFrame(){
     const a = CONFIG.trailAlpha;
-    ctx.fillStyle = isLightTheme()
-      ? `rgba(255,255,255,${a})`
-      : `rgba(0,0,0,${a})`;
+    ctx.fillStyle = isLightTheme() ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`;
     ctx.fillRect(0, 0, W, H);
   }
 
-  // (11) Cor do pixel (boost controla brilho)
   function pixelColor(alpha, boost = 1){
     const r = Math.min(255, Math.floor(BLUE.r * boost));
     const g = Math.min(255, Math.floor(BLUE.g * boost));
@@ -728,25 +566,18 @@ function initPixelRainBackground(){
     return `rgba(${r},${g},${b},${alpha})`;
   }
 
-  // (12) Desenho de pixel (ajusta suavidade no modo claro)
   function drawPixel(x, y, size, a){
-    if (isLightTheme()){
-      ctx.fillStyle = pixelColor(a * 0.68, 1.10);
-    } else {
-      ctx.fillStyle = pixelColor(a, 1.75);
-    }
+    ctx.fillStyle = isLightTheme() ? pixelColor(a * 0.68, 1.10) : pixelColor(a, 1.75);
     ctx.fillRect((x | 0), (y | 0), size, size);
   }
 
-  // (13) Loop principal
   function step(t){
     const dt = Math.min(0.033, (t - lastT) / 1000);
     lastT = t;
 
     fadeFrame();
 
-    // Haze (ajustado para não “lavar” no claro)
-      if (CONFIG.hazeStrength > 0){
+    if (CONFIG.hazeStrength > 0){
       const haze = ctx.createRadialGradient(
         W * 0.5, H * 0.35, 80,
         W * 0.5, H * 0.35, Math.max(W, H) * 0.9
@@ -793,16 +624,9 @@ function initPixelRainBackground(){
     if (!document.hidden) requestAnimationFrame(step);
   }
 
-  // (14) Reage ao tema mudar (toggle) sem recarregar
-  const themeObserver = new MutationObserver(() => {
-    clearInstant();
-  });
-  themeObserver.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["data-theme"]
-  });
+  const themeObserver = new MutationObserver(() => clearInstant());
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
-  // (15) Eventos do background
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden){
       lastT = performance.now();
@@ -812,47 +636,35 @@ function initPixelRainBackground(){
 
   window.addEventListener("resize", resize, { passive: true });
 
-  // (16) Boot
   resize();
   requestAnimationFrame(step);
 }
 
-/* ==========================================================
-   15) EVENTS (UI + ciclo de vida)
-   ========================================================== */
-
+/* 10) Events + init */
 function bindEvents(){
-  // Tema
   themeBtn.addEventListener("click", toggleTheme);
 
-  // Idiomas
-  langBtn.addEventListener("click", toggleLangMenu);
+  if (langBtn){
+    langBtn.addEventListener("click", () => {
+      buildLangMenu();
+      toggleLangMenu();
+    });
+  }
 
-  document.addEventListener("click", (e) => {
-    if (!langMenu.hidden){
-      const within = e.target.closest(".lang");
-      if (!within) closeLangMenu();
-    }
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !langMenu.hidden) closeLangMenu();
-  });
-
-  // Retorna para aba/janela: força update
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible"){
-      updateAllProgress({ force: true });
-      updateClock();
+      updateAllProgress();
+      lastSuccessfulUpdateAt = Date.now();
+      checkStale();
     }
   });
 
   window.addEventListener("focus", () => {
-    updateAllProgress({ force: true });
-    updateClock();
+    updateAllProgress();
+    lastSuccessfulUpdateAt = Date.now();
+    checkStale();
   });
 
-  // Se o tema do sistema mudar e o user não travou manualmente, segue sistema
   if (window.matchMedia){
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     mq.addEventListener?.("change", () => {
@@ -864,27 +676,15 @@ function bindEvents(){
   }
 }
 
-/* ==========================================================
-   16) INIT (bootstrap do app)
-   - seta link do coffee
-   - aplica tema, idioma, menu
-   - liga background, binds e loops
-   ========================================================== */
-
-(async function init(){
+(function init(){
   coffeeBtn.href = COFFEE_LINK;
 
+  initLang();
   initTheme();
 
-  await initLanguage();
   buildLangMenu();
-
-  // Background animado
   initPixelRainBackground();
-
   bindEvents();
-  startAutoUpdate();
   startClock();
-
   lastSuccessfulUpdateAt = Date.now();
 })();
