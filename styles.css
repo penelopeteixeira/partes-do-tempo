@@ -8,38 +8,35 @@
   --footer-h: 64px;
   --topbar-h: 72px;
 
-  /* Grande (default / >=1921px) */
-  --kpi-percent: clamp(96px, 9.5vw, 160px);
-  --kpi-text:    clamp(30px, 3.2vw, 56px);
-  --kpi-emoji:   clamp(24px, 2.6vw, 48px);
-
-  --hol-title:   clamp(30px, 3.0vw, 48px);
-  --hol-list:    clamp(18px, 1.6vw, 26px);
+/* Grande (default / >=1921px)*/
+--kpi-percent: clamp(91.2px, 9.025vw, 152px);
+--kpi-text:    clamp(28.5px, 3.04vw, 53.2px);
+--kpi-emoji:   clamp(22.8px, 2.47vw, 45.6px);
+--hol-title: clamp(24.3px, 2.43vw, 38.88px);
+--hol-list:  clamp(14.58px, 1.296vw, 21.06px);
 }
 
-/* ===== Tipografia DESKTOP por largura (Opção B) ===== */
-/* Médio (901–1920px) */
+/* Médio (901–1920px)*/
 @media (min-width: 901px) and (max-width: 1920px){
   :root{
-    --kpi-percent: clamp(90px, 8.8vw, 152px);
-    --kpi-text:    clamp(28px, 3.0vw, 52px);
-    --kpi-emoji:   clamp(22px, 2.4vw, 45px);
-    --hol-title:   clamp(29px, 2.9vw, 45px);
-    --hol-list:    clamp(17px, 1.5vw, 24px);
+    --kpi-percent: clamp(81px, 7.9vw, 137px);
+    --kpi-text:    clamp(25px, 2.7vw, 47px);
+    --kpi-emoji:   clamp(20px, 2.2vw, 41px);
+    --hol-title: clamp(23.4px, 2.34vw, 36.9px);
+    --hol-list:  clamp(13.5px, 1.26vw, 19.8px);
   }
 }
 
-/* Pequeno (901–1439px) */
+/* Pequeno (901–1439px)*/
 @media (min-width: 901px) and (max-width: 1439px){
   :root{
-    --kpi-percent: clamp(83px, 7.9vw, 144px);
-    --kpi-text:    clamp(25px, 2.7vw, 50px);
-    --kpi-emoji:   clamp(20px, 2.1vw, 43px);
-    --hol-title:   clamp(27px, 2.7vw, 43px);
-    --hol-list:    clamp(16px, 1.44vw, 23px);
+    --kpi-percent: clamp(75px, 7.1vw, 130px);
+    --kpi-text:    clamp(23px, 2.4vw, 45px);
+    --kpi-emoji:   clamp(18px, 1.9vw, 39px);
+    --hol-title:   clamp(24px, 2.4vw, 39px);
+    --hol-list:    clamp(14px, 1.3vw, 21px);
   }
 }
-
 /* 2) Tokens por tema */
 html[data-theme="dark"]{
   --divider-style: dotted;
@@ -52,6 +49,7 @@ html[data-theme="dark"]{
   --frame: rgba(255,255,255,.12);
   --m-sep: rgba(255,255,255,.16);
 }
+
 html[data-theme="light"]{
   --divider-style: dotted;
   --bg: #dbdbdb;
@@ -195,12 +193,12 @@ body{
 
 /* esconder scrollbar mantendo scroll */
 .tile__inner--holidays::-webkit-scrollbar{ width: 0; height: 0; }
-.tile__inner--holidays{ -ms-overflow-style: none; scrollbar-width: none; }
+.tile__inner--holidays{ -ms-overflow-style: none;}
 
 .holidays__title{
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   font-size: var(--hol-title);
   font-weight: 900;
