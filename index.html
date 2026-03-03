@@ -1,11 +1,7 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="pt-BR" data-theme="dark">
 <head>
-  <!-- =========================================================
-  HEAD / META
-  - Charset, viewport e color-scheme
-  - Título, favicon e CSS principal do projeto
-========================================================= -->
+  <!-- Meta + CSS -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
@@ -15,159 +11,142 @@
 </head>
 
 <body>
-  <!-- =========================================================
-  BACKGROUND DINÂMICO (Pixel Rain)
-  - canvas (#bg): onde o JS desenha a animação
-  - .vignette: vinheta/glow para dar profundidade
-  - .frame: moldura discreta
-  Observação: precisa ficar ANTES da .app pra estar “atrás”
-  ========================================================= -->
+  <!-- Background (canvas + vinheta) -->
   <canvas id="bg" aria-hidden="true"></canvas>
   <div class="vignette" aria-hidden="true"></div>
 
-  <!-- =========================================================
-    APP (UI PRINCIPAL)
-    - Toda a sua interface fica aqui
-    - Deve existir APENAS UMA .app
-    ========================================================= -->
   <div class="app" role="application">
 
-    <!-- =========================================================
-      TOPBAR (Cabeçalho fixo da UI)
-      - Esquerda: botão de tema
-      - Centro: relógio/data ao vivo
-      - Direita: botão/menu de idioma
-      ========================================================= -->
+    <!-- Header -->
     <header class="topbar">
-
-      <!-- =========================
-        LEFT: Theme toggle
-        - Botão que alterna tema light/dark
-        - #themeIcon muda o emoji
-        - #themeLabel recebe texto i18n
-        ========================= -->
       <div class="topbar__left">
         <button id="themeBtn" class="pill pill--ghost" type="button" aria-label="Theme toggle">
           <span class="pill__icon" aria-hidden="true" id="themeIcon">🌓</span>
-          <span class="pill__text" id="themeLabel" data-i18n="ui.dark">Escuro</span>
+          <span class="pill__text" id="themeLabel">Escuro</span>
         </button>
       </div>
 
-      <!-- =========================
-      CENTER: Live clock
-      - #liveClock é atualizado a cada 1s no JS
-      ========================= -->
       <div class="topbar__center" aria-live="polite">
         <span class="clock__icon" aria-hidden="true">🗓️</span>
         <span id="liveClock" class="clock__text">--/--/---- - --:--:--</span>
       </div>
 
-      <!-- =========================
-        RIGHT: Language dropdown
-        - #langBtn abre/fecha o menu
-        - #langMenu é preenchido via JS
-        ========================= -->
       <div class="topbar__right">
         <div class="lang">
+          <!-- Seleção de idiomas -->
           <button
             id="langBtn"
             class="pill pill--ghost"
             type="button"
             aria-haspopup="menu"
             aria-expanded="false"
+            aria-label="Language"
+            title="Idioma"
           >
             <span class="pill__icon" aria-hidden="true">🌐</span>
-            <span id="langBtnLabel" class="pill__text" data-i18n="ui.language">Idioma</span>
+            <span id="langBtnLabel" class="pill__text">Idioma</span>
             <span class="pill__chev" aria-hidden="true">▾</span>
           </button>
 
-          <div id="langMenu" class="menu" role="menu" aria-label="Language menu" hidden>
-            <!-- preenchido via JS -->
-          </div>
+          <div id="langMenu" class="menu" role="menu" aria-label="Language menu" hidden></div>
         </div>
       </div>
     </header>
 
-    <!-- =========================================================
-      MAIN / STAGE
-      - Contém os tiles (weekly/monthly/yearly)
-      - #status aparece se o watchdog detectar travamento
-      ========================================================= -->
+    <!-- Centro (visualizando: 6 tiles) -->
     <main class="stage" aria-live="polite">
+      <section class="tiles tiles--6" aria-label="Progress overview">
 
-      <!-- =========================
-        TILES (3 colunas desktop / 1 coluna mobile)
-        - #weeklyPercent / #monthlyPercent / #yearlyPercent atualizados no JS
-        - labels usam data-i18n
-        ========================= -->
-      <section class="tiles" aria-label="Progress overview">
+        <!-- 1) Dia -->
+        <article class="tile" aria-label="Daily progress">
+          <div class="tile__inner">
+            <div class="percent" id="dailyPercent">0%</div>
+            <div class="subtitle">
+              <span id="dailyLabel">do dia concluído<span class="checkEmoji" aria-hidden="true">✅</span></span>
+            </div>
+          </div>
+        </article>
 
-        <!-- Weekly -->
+        <!-- 2) Semana útil -->
+        <article class="tile" aria-label="Workweek progress">
+          <div class="tile__inner">
+            <div class="percent" id="workweekPercent">0%</div>
+            <div class="subtitle subtitle--wrap">
+              <span id="workweekLabel">da semana útil concluída<span class="checkEmoji" aria-hidden="true">✅</span></span>
+            </div>
+          </div>
+        </article>
+
+        <!-- 3) Semana (inteira) -->
         <article class="tile" aria-label="Weekly progress">
           <div class="tile__inner">
             <div class="percent" id="weeklyPercent">0%</div>
             <div class="subtitle">
-              <span id="weeklyLabel" data-i18n="labels.weeklyDone">da semana concluída</span>
-              <span class="checkEmoji" aria-hidden="true">✅</span>
+              <span id="weeklyLabel">da semana concluída<span class="checkEmoji" aria-hidden="true">✅</span></span>
             </div>
           </div>
         </article>
 
-        <!-- Monthly -->
+        <!-- 4) Mês -->
         <article class="tile" aria-label="Monthly progress">
           <div class="tile__inner">
             <div class="percent" id="monthlyPercent">0%</div>
             <div class="subtitle">
-              <span id="monthlyLabel" data-i18n="labels.monthlyDoneTpl">de {month} concluído</span>
-              <span class="checkEmoji" aria-hidden="true">✅</span>
+              <span id="monthlyLabel">do mês concluído<span class="checkEmoji" aria-hidden="true">✅</span></span>
             </div>
           </div>
         </article>
 
-        <!-- Yearly -->
+        <!-- 5) Ano -->
         <article class="tile" aria-label="Yearly progress">
           <div class="tile__inner">
             <div class="percent" id="yearlyPercent">0%</div>
             <div class="subtitle">
-              <span id="yearlyLabel" data-i18n="labels.yearlyDone">do ano concluído</span>
-              <span class="checkEmoji" aria-hidden="true">✅</span>
+              <span id="yearlyLabel">do ano concluído<span class="checkEmoji" aria-hidden="true">✅</span></span>
             </div>
+          </div>
+        </article>
+
+        <!-- 6) Feriados (estático) -->
+        <article class="tile tile--holidays" aria-label="Holidays">
+          <div class="tile__inner tile__inner--holidays">
+            <div class="holidays__title">
+              <span id="holidaysTitle">Feriados nacionais</span><span aria-hidden="true">🗓️</span>
+            </div>
+
+            <ul class="holidays__list" aria-label="Holiday list">
+              <li><span class="hDate">01/01</span> - Ano Novo</li>
+              <li><span class="hDate">03/04</span> - Paixão de Cristo</li>
+              <li><span class="hDate">05/04</span> - Páscoa</li>
+              <li><span class="hDate">21/04</span> - Tiradentes</li>
+              <li><span class="hDate">01/05</span> - Dia do Trabalho</li>
+              <li><span class="hDate">04/06</span> - Corpus Christi</li>
+              <li><span class="hDate">07/09</span> - Independência</li>
+              <li><span class="hDate">12/10</span> - N. Sra. Aparecida</li>
+              <li><span class="hDate">02/11</span> - Finados</li>
+              <li><span class="hDate">15/11</span> - Proclamação da República</li>
+              <li><span class="hDate">20/11</span> - Consciência Negra</li>
+              <li><span class="hDate">25/12</span> - Natal</li>
+            </ul>
           </div>
         </article>
 
       </section>
 
-      <!-- =========================
-        STATUS / WATCHDOG
-        - Aparece se o loop de update ficar “stale”
-        ========================= -->
+      <!-- Watchdog -->
       <div id="status" class="status" role="status" hidden>
-        <span data-i18n="errors.paused">Atualização pausou. Recarregue a página.</span>
+        <span id="statusText">Atualização pausou. Recarregue a página.</span>
       </div>
     </main>
 
-    <!-- =========================================================
-      CTA: Buy me a coffee
-      - Link é setado no JS (COFFEE_LINK)
-      - No mobile vira footer fixo (via CSS)
-      ========================================================= -->
-    <a
-      id="coffeeBtn"
-      class="pill pill--coffee"
-      href="#"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Me compre um café ☕
+    <!-- Footer -->
+    <a id="coffeeBtn" class="pill pill--coffee" href="#" target="_blank" rel="noopener noreferrer">
+      <span id="coffeeLabel">Me compre um café</span> ☕
     </a>
 
   </div>
 
-  <!-- =========================================================
-    SCRIPTS
-    - translations.js define TRANSLATIONS, SUPPORTED_LANGS, LANG_META
-    - script.js contém lógica do app + initPixelRainBackground()
-    ========================================================= -->
+  <!-- js) -->
   <script src="translations.js"></script>
   <script src="script.js"></script>
 </body>
