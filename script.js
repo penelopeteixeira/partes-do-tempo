@@ -1,5 +1,5 @@
 /* 1) Config */
-const COFFEE_LINK = "https://livepix.gg/partesdotempo";
+const COFFEE_LINK = "https://apoia.se/partesdotempo";
 const STORAGE_THEME_KEY = "preferredTheme_v1";
 const STORAGE_LANG_KEY = "preferredLang_v1";
 
@@ -688,3 +688,4 @@ function bindEvents(){
   startClock();
   lastSuccessfulUpdateAt = Date.now();
 })();
+
