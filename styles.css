@@ -367,6 +367,10 @@ html[data-theme="light"] .status{
     font-weight: 750;
   }
 
+  .holidays__spacer{
+    height: 72px;     /* espaço “extra” */
+  }
+
   .pill--coffee{
     min-height: var(--footer-h);
     left: 0; right: 0; bottom: 0;
@@ -427,7 +431,3 @@ html[data-theme="light"] .vignette{
     radial-gradient(900px 900px at 50% 55%, transparent 60%, rgba(0,0,0,0.18) 100%);
   mix-blend-mode: multiply;
 }
-
-
-
-
