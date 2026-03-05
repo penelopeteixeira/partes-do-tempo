@@ -367,9 +367,14 @@ html[data-theme="light"] .status{
     font-weight: 750;
   }
 
-  .holidays__spacer{
-    height: 72px;     /* espaço “extra” */
+  .holidays__spacer_up{
+    height: 18px;
   }
+
+.holidays__spacer_down{
+    height: 36px;
+  }
+
 
   .pill--coffee{
     min-height: var(--footer-h);
