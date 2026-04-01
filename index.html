@@ -3,7 +3,7 @@
 <head>
   <!-- Meta + CSS -->
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="light dark" />
   <title>Partes do Tempo</title>
   <link rel="icon" type="image/png" href="https://i.imgur.com/tME5AaS.png">
@@ -33,7 +33,6 @@
 
       <div class="topbar__right">
         <div class="lang">
-          <!-- Seleção de idiomas -->
           <button
             id="langBtn"
             class="pill pill--ghost"
@@ -53,7 +52,7 @@
       </div>
     </header>
 
-    <!-- Centro (visualizando: 6 tiles) -->
+    <!-- Centro -->
     <main class="stage" aria-live="polite">
       <section class="tiles tiles--6" aria-label="Progress overview">
 
@@ -77,7 +76,7 @@
           </div>
         </article>
 
-        <!-- 3) Semana (inteira) -->
+        <!-- 3) Semana -->
         <article class="tile" aria-label="Weekly progress">
           <div class="tile__inner">
             <div class="percent" id="weeklyPercent">0%</div>
@@ -107,7 +106,7 @@
           </div>
         </article>
 
-        <!-- 6) Feriados (estático) -->
+        <!-- 6) Feriados -->
         <article class="tile tile--holidays" aria-label="Holidays">
           <div class="tile__inner tile__inner--holidays">
             <div class="holidays__title">
@@ -115,20 +114,46 @@
               <span class="checkEmoji" aria-hidden="true">🗓️</span>
             </div>
 
-            <ul class="holidays__list" aria-label="Holiday list">
+            <ul class="holidays__list" id="holidaysList" aria-label="Holiday list">
               <li class="holidays__spacer_up" aria-hidden="true"></li>
-              <li><span class="hDate">01/01</span> - Ano Novo</li>
-              <li><span class="hDate">03/04</span> - Paixão de Cristo</li>
-              <li><span class="hDate">05/04</span> - Páscoa</li>
-              <li><span class="hDate">21/04</span> - Tiradentes</li>
-              <li><span class="hDate">01/05</span> - Dia do Trabalho</li>
-              <li><span class="hDate">04/06</span> - Corpus Christi</li>
-              <li><span class="hDate">07/09</span> - Independência</li>
-              <li><span class="hDate">12/10</span> - N. Sra. Aparecida</li>
-              <li><span class="hDate">02/11</span> - Finados</li>
-              <li><span class="hDate">15/11</span> - Proclamação da República</li>
-              <li><span class="hDate">20/11</span> - Consciência Negra</li>
-              <li><span class="hDate">25/12</span> - Natal</li>
+
+              <li class="holiday-item" data-mmdd="01-01">
+                <span class="hDate">01/01</span> - Ano Novo
+              </li>
+              <li class="holiday-item" data-mmdd="04-03">
+                <span class="hDate">03/04</span> - Paixão de Cristo
+              </li>
+              <li class="holiday-item" data-mmdd="04-05">
+                <span class="hDate">05/04</span> - Páscoa
+              </li>
+              <li class="holiday-item" data-mmdd="04-21">
+                <span class="hDate">21/04</span> - Tiradentes
+              </li>
+              <li class="holiday-item" data-mmdd="05-01">
+                <span class="hDate">01/05</span> - Dia do Trabalho
+              </li>
+              <li class="holiday-item" data-mmdd="06-04">
+                <span class="hDate">04/06</span> - Corpus Christi
+              </li>
+              <li class="holiday-item" data-mmdd="09-07">
+                <span class="hDate">07/09</span> - Independência
+              </li>
+              <li class="holiday-item" data-mmdd="10-12">
+                <span class="hDate">12/10</span> - N. Sra. Aparecida
+              </li>
+              <li class="holiday-item" data-mmdd="11-02">
+                <span class="hDate">02/11</span> - Finados
+              </li>
+              <li class="holiday-item" data-mmdd="11-15">
+                <span class="hDate">15/11</span> - Proclamação da República
+              </li>
+              <li class="holiday-item" data-mmdd="11-20">
+                <span class="hDate">20/11</span> - Consciência Negra
+              </li>
+              <li class="holiday-item" data-mmdd="12-25">
+                <span class="hDate">25/12</span> - Natal
+              </li>
+
               <li class="holidays__spacer_down" aria-hidden="true"></li>
             </ul>
           </div>
@@ -149,7 +174,6 @@
 
   </div>
 
-  <!-- js) -->
   <script src="translations.js"></script>
   <script src="script.js"></script>
 </body>
