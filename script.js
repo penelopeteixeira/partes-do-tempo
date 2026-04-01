@@ -22,6 +22,7 @@ let lastFiveBucket = null;
 
 /* 3) DOM */
 const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
 const statusEl = $("#status");
 const statusTextEl = $("#statusText");
@@ -50,6 +51,7 @@ const monthlyLabelEl = $("#monthlyLabel");
 const yearlyLabelEl = $("#yearlyLabel");
 
 const holidaysTitleEl = $("#holidaysTitle");
+const holidaysListEl = $("#holidaysList");
 const coffeeLabelEl = $("#coffeeLabel");
 
 /* 4) Helpers */
@@ -63,38 +65,48 @@ function formatPercentInt(value){
 }
 
 function formatClock(now){
-  const df = new Intl.DateTimeFormat("pt-BR", { year: "numeric", month: "2-digit", day: "2-digit" });
-  const tf = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const df = new Intl.DateTimeFormat("pt-BR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
+
+  const tf = new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+
   return `${df.format(now)} - ${tf.format(now)}`;
 }
 
 function startOfDay(date){
   const d = new Date(date);
-  d.setHours(0,0,0,0);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
 
 function startOfMonth(date){
   const d = new Date(date.getFullYear(), date.getMonth(), 1);
-  d.setHours(0,0,0,0);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
 
 function endOfMonth(date){
   const d = new Date(date.getFullYear(), date.getMonth() + 1, 1);
-  d.setHours(0,0,0,0);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
 
 function startOfYear(date){
   const d = new Date(date.getFullYear(), 0, 1);
-  d.setHours(0,0,0,0);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
 
 function endOfYear(date){
   const d = new Date(date.getFullYear() + 1, 0, 1);
-  d.setHours(0,0,0,0);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
 
@@ -114,6 +126,16 @@ function overlapsMinutes(rangeStart, rangeEnd, windowStart, windowEnd){
   const s = Math.max(rangeStart.getTime(), windowStart.getTime());
   const e = Math.min(rangeEnd.getTime(), windowEnd.getTime());
   return Math.max(0, (e - s) / 60000);
+}
+
+function parseMmDd(mmdd, year){
+  if (!mmdd) return null;
+  const [mm, dd] = String(mmdd).split("-").map(Number);
+  if (!mm || !dd) return null;
+
+  const d = new Date(year, mm - 1, dd);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
 /* 4.1) i18n */
@@ -141,6 +163,7 @@ function t(path, vars){
   const dict = (TRANSLATIONS && TRANSLATIONS[currentLang]) ? TRANSLATIONS[currentLang] : TRANSLATIONS.pt;
   const parts = path.split(".");
   let val = dict;
+
   for (const p of parts){
     val = val && Object.prototype.hasOwnProperty.call(val, p) ? val[p] : undefined;
   }
@@ -158,6 +181,7 @@ function t(path, vars){
       val = val.replaceAll(`{${k}}`, String(vars[k]));
     }
   }
+
   return val;
 }
 
@@ -213,6 +237,7 @@ function initLang(){
     applyLang(saved);
     return;
   }
+
   const fromNav = normalizeLang(navigator.language || navigator.userLanguage || "pt-BR");
   applyLang(fromNav);
 }
@@ -266,6 +291,7 @@ function buildLangMenu(){
   for (const code of SUPPORTED_LANGS){
     const meta = LANG_META[code] || { native: code.toUpperCase() };
     const btn = document.createElement("button");
+
     btn.type = "button";
     btn.setAttribute("role", "menuitemradio");
     btn.setAttribute("aria-checked", code === currentLang ? "true" : "false");
@@ -308,6 +334,41 @@ function buildLangMenu(){
     };
     document.addEventListener("click", onDocClick, true);
   }, 0);
+}
+
+/* 4.2) Holidays */
+function updateHolidayVisibility(now = safeNow()){
+  if (!holidaysListEl) return;
+
+  const today = startOfDay(now);
+  const year = today.getFullYear();
+  const holidayItems = $$("#holidaysList .holiday-item");
+
+  let nextItem = null;
+
+  for (const item of holidayItems){
+    item.classList.remove("holiday-item--next");
+
+    const mmdd = item.dataset.mmdd;
+    const holidayDate = parseMmDd(mmdd, year);
+
+    if (!holidayDate){
+      item.hidden = false;
+      continue;
+    }
+
+    const hasPassed = holidayDate.getTime() < today.getTime();
+
+    item.hidden = hasPassed;
+
+    if (!hasPassed && !nextItem){
+      nextItem = item;
+    }
+  }
+
+  if (nextItem){
+    nextItem.classList.add("holiday-item--next");
+  }
 }
 
 /* 5) Progress */
@@ -388,6 +449,7 @@ function yearlyProgress(now){
 function updateAllProgress(){
   try{
     const now = safeNow();
+
     dailyPercentEl.textContent = formatPercentInt(dailyProgress(now));
     workweekPercentEl.textContent = formatPercentInt(workweekProgress(now));
     weeklyPercentEl.textContent = formatPercentInt(weeklyProgress(now));
@@ -395,6 +457,7 @@ function updateAllProgress(){
     yearlyPercentEl.textContent = formatPercentInt(yearlyProgress(now));
 
     updateTexts();
+    updateHolidayVisibility(now);
 
     lastSuccessfulUpdateAt = Date.now();
     showStatus(false);
@@ -416,7 +479,6 @@ function applyTheme(theme){
   document.documentElement.setAttribute("data-theme", currentTheme);
 
   buildLangMenu();
-
   updateThemeUI();
 }
 
@@ -432,6 +494,7 @@ function initTheme(){
     applyTheme(saved);
     return;
   }
+
   applyTheme(getPreferredThemeFromSystem());
 }
 
@@ -521,8 +584,10 @@ function initPixelRainBackground(){
   function buildColumns(){
     columns = [];
     let x = 0;
+
     while (x < W){
       const gap = rand(CONFIG.columnGapMin, CONFIG.columnGapMax);
+
       columns.push({
         x,
         y: rand(-H, H),
@@ -534,12 +599,14 @@ function initPixelRainBackground(){
           jitter: rand(0.2, 1.2),
         }
       });
+
       x += gap;
     }
   }
 
   function clearInstant(){
     const g = ctx.createLinearGradient(0, 0, 0, H);
+
     if (isLightTheme()){
       g.addColorStop(0, "rgb(245, 247, 255)");
       g.addColorStop(0.6, "rgb(236, 240, 252)");
@@ -549,6 +616,7 @@ function initPixelRainBackground(){
       g.addColorStop(0.6, "rgb(2, 4, 14)");
       g.addColorStop(1, "rgb(1, 2, 10)");
     }
+
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
   }
@@ -625,7 +693,10 @@ function initPixelRainBackground(){
   }
 
   const themeObserver = new MutationObserver(() => clearInstant());
-  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"]
+  });
 
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden){
@@ -686,6 +757,6 @@ function bindEvents(){
   initPixelRainBackground();
   bindEvents();
   startClock();
+  updateHolidayVisibility();
   lastSuccessfulUpdateAt = Date.now();
 })();
-
