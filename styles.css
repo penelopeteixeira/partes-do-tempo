@@ -211,8 +211,9 @@ body{
 }
 
 .holidays__list{
+  list-style-type: none;
   margin: 0;
-  padding-left: 22px;
+  padding-left: 8px;
   font-size: var(--hol-list);
   line-height: 1.6;
   color: var(--text);
