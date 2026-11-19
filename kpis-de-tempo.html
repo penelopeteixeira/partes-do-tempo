@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Partes do Tempo – Documentação dos KPIs</title>
+<style>
+  /* ======================== Tokens (estilo Radix) ======================== */
+  :root {
+    --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface-hover: #334155;
+    --text: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --border: #334155;
+    --border-hover: #475569;
+
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --accent: #818cf8;
+
+    --ok: #22c55e;
+    --warn: #eab308;
+    --danger: #ef4444;
+
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
+
+    --header-h: 64px;
+    --sidebar-w: 280px;
+  }
+
+  /* Light theme (atributo explícito ou preferência do sistema) */
+  html[data-theme="light"] {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --surface-hover: #f1f5f9;
+    --text: #0f172a;
+    --text-muted: #475569;
+    --text-dim: #64748b;
+    --border: #cbd5e1;
+    --border-hover: #94a3b8;
+    --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1)                     , 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  html[data-theme="dark"] {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface-hover: #334155;
+    --text: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --border: #334155;
+    --border-hover: #475569;
+    --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+  }
+
+  @media (prefers-color-scheme: light) {
+    html:not([data-theme]) {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-hover: #f1f5f9;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #64748b;
+      --border: #cbd5e1;
+      --border-hover: #94a3b8;
+      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  html[data-theme="light"] .container pre,
+  html[data-theme="light"] .formula {
+    background: #f1f5f9;
+    color: #334155;
+  }
+  html[data-theme="light"] .formula .num { color: #be185d; }
+  html[data-theme="light"] .formula .str { color: #0e7490; }
+  html[data-theme="light"] .formula .fn { color: #1d4ed8; }
+  html[data-theme="light"] .formula .kw { color: #6d28d9; }
+  html[data-theme="light"] th { background: #f1f5f9; }
+
+  /* ======================== Reset & base ======================== */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ======================== Layout (sidebar + conteúdo) ======================== */
+  .doc-shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    grid-template-rows: var(--header-h) 1fr;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .doc-header {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 24px;
+    z-index: 40;
+    position: sticky;
+    top: 0;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.125rem;
+    letter-spacing: -0.5px;
+  }
+
+  .brand-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-weight: 800;
+    font-size: 1.25rem;
+  }
+
+  .doc-header h1 {
+    font-size: 1rem;
+    color: var(--text);
+  }
+
+  .doc-header .chip {
+    margin-left: auto;
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--surface-hover);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface-hover);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .theme-toggle:hover { border-color: var(--border-hover); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  /* Sidebar */
+  .doc-sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+  }
+
+  .nav-section {
+    padding: 0 16px 8px 16px;
+  }
+
+  .nav-section .section-title {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-list { list-style: none; }
+  .nav-item { margin: 4px 0; }
+  .nav-link {
+    display: block;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: background 0.2s, color 0.2s, border 0.2s;
+    border: 1px solid transparent;
+  }
+  .nav-link:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+  .nav-link--active {
+    background: rgba(59, 130, 246, 0.12);
+    color: var(--primary);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+  }
+
+  /* Conteúdo principal */
+  .doc-content {
+    overflow-y: auto;
+    padding: 40px 48px 60px;
+    position: relative;
+  }
+
+  .doc-content h2 {
+    font-size: 1.75rem;
+    margin: 48px 0 16px;
+    letter-spacing: -0.5px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 8px;
+  }
+
+  .doc-content h3 {
+    font-size: 1.125rem;
+    margin: 28px 0 10px;
+    color: var(--primary);
+  }
+
+  .doc-content p {
+    margin: 0 0 14px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+
+  .doc-content ul {
+    margin: 8px 0 16px 20px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+  .doc-content li { margin: 6px 0; }
+
+  /* ======================== Containers ======================== */
+  .container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin: 28px 0;
+    box-shadow: var(--shadow);
+  }
+
+  .container--formula {
+    background: linear-gradient(180deg, rgba(59,130,246,0.06), transparent);
+    border-left: 4px solid var(--primary);
+  }
+
+  .container--example {
+    background: linear-gradient(180deg, rgba(129,140,248,0.05), transparent);
+    border-left: 4px solid var(--accent);
+  }
+
+  .container--code {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .container header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .container h4 {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text);
+  }
+
+  .container .badge {
+    font-size: 0.6875rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--border);
+    color: var(--text-dim);
+    margin-left: auto;
+  }
+
+  .container pre {
+    background: #0b1021;
+    color: #cbd5e1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.825rem;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    line-height: 1.55;
+    border: 1px solid var(--border);
+  }
+
+  .container pre code {
+    color: inherit;
+    font-size: inherit;
+  }
+
+  /* Fórmulas */
+  .formula {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 1rem;
+    background: #0b1021;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin: 14px 0;
+    overflow-x: auto;
+    color: #cbd5e1;
+  }
+  .formula .kw { color: var(--accent); font-weight: 700; }
+  .formula .fn { color: var(--primary); }
+  .formula .num { color: #f472b6; }
+  .formula .str { color: #a5f3fc; }
+
+  /* Diagramas SVG */
+  .diagram-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 24px 0;
+    padding: 16px 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-hover);
+  }
+
+  .diagram-wrap svg { max-width: 100%; height: auto; display: block; }
+
+  .caption {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 8px;
+    padding-bottom: 12px;
+  }
+
+  /* Tiles / cards de visão geral */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 24px 0 40px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: var(--shadow);
+  }
+
+  .kpi-card .kpi-name {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+  }
+
+  .kpi-card .kpi-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: var(--primary);
+  }
+
+  .kpi-card .kpi-desc {
+    font-size: 0.825rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+
+  /* Tabela */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.875rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+  th { color: var(--text); font-weight: 600; background: rgba(0,0,0,0.15); }
+
+  /* Backend note */
+  .note {
+    background: rgba(234, 179, 8, 0.10);
+    border: 1px solid rgba(234, 179, 8, 0.30);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin: 20px 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+  .note strong { color: var(--warn); }
+
+  /* Footer */
+  .doc-footer {
+    margin-top: 64px;
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  /* Mobile */
+  @media (max-width: 900px) {
+    .doc-shell { grid-template-columns: 1fr; grid-template-rows: var(--header-h) 1fr; }
+    .doc-sidebar { display: none; }
+    .doc-content { padding: 24px 20px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="doc-shell">
+
+  <!-- Header -->
+  <header class="doc-header">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <h1>Partes do Tempo — KPIs de Tempo</h1>
+    </div>
+    <span class="chip">Estático · Front-end puro · Sem backend</span>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="Alternar tema" title="Alternar tema">🌓</button>
+  </header>
+
+  <!-- Sidebar de navegação -->
+  <nav class="doc-sidebar">
+    <div class="nav-section">
+      <div class="section-title">Conteúdo</div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="#visao-geral" class="nav-link nav-link--active">Visão geral</a></li>
+        <li class="nav-item"><a href="#arquitetura" class="nav-link">Arquitetura</a></li>
+        <li class="nav-item"><a href="#kpis" class="nav-link">KPIs de tempo</a></li>
+        <li class="nav-item"><a href="#kpi-dia" class="nav-link">Dia</a></li>
+        <li class="nav-item"><a href="#kpi-semana-utile" class="nav-link">Semana útil</a></li>
+        <li class="nav-item"><a href="#kpi-semana" class="nav-link">Semana</a></li>
+        <li class="nav-item"><a href="#kpi-mes" class="nav-link">Mês</a></li>
+        <li class="nav-item"><a href="#kpi-ano" class="nav-link">Ano</a></li>
+        <li class="nav-item"><a href="#feriados" class="nav-link">Feriados</a></li>
+        <li class="nav-item"><a href="#resumo" class="nav-link">Resumo técnico</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Conteúdo -->
+  <main class="doc-content">
+
+    <section id="visao-geral">
+      <h2>Visão geral</h2>
+      <p>
+        O <strong>Partes do Tempo</strong> é uma aplicação de página única (SPA) estática que mostra, em tempo real, o
+        progresso decorrido de diferentes janelas temporais: dia, semana útil, semana completa, mês e ano. Também lista
+        feriados nacionais do Brasil ainda não ocorridos no ano corrente.
+      </p>
+      <p>
+        Tudo roda no navegador (cliente). Não há servidor, não há banco de dados e não existe backend. Os dados de horário
+        vêm do relógio do próprio dispositivo (<code>new Date()</code>) e os KPIs são calculados localmente a cada minuto.
+      </p>
+
+      <div class="container">
+        <header><h4>Quatro pilares do cálculo</h4></header>
+        <ul>
+          <li><strong>Faixas de tempo</strong>: cada KPI define um <em>início</em> e um <em>fim</em> (ex.: 0h do dia até 23:59:59.999 do dia).</li>
+          <li><strong>Minutos decorridos</strong>: diferença, em minutos, entre o início da janela e o instante atual.</li>
+          <li><strong>Bucketização de 5 minutos</strong>: o resultado é arredondado para baixo em blocos de 5 minutos.</li>
+          <li><strong>Clamp 0–100%</strong>: o percentual final nunca sai desse intervalo.</li>
+        </ul>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-name">Dia</div>
+          <div class="kpi-value" id="v-dia">0%</div>
+          <div class="kpi-desc">00:00 → 23:59:59,999</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-name">Semana útil</div>
+          <div class="kpi-value" id="v-semana-utile">0%</div>
+          <div class="kpi-desc">Seg–Sex · 09:00–12:00 e 13:00–18:00</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-name">Semana</div>
+          <div class="kpi-value" id="v-semana">0%</div>
+          <div class="kpi-desc">Seg–Dom · 24h por dia</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-name">Mês</div>
+          <div class="kpi-value" id="v-mes">0%</div>
+          <div class="kpi-desc">1º dia → último dia do mês</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-name">Ano</div>
+          <div class="kpi-value" id="v-ano">0%</div>
+          <div class="kpi-desc">1º de janeiro → 31 de dezembro</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Arquitetura -->
+    <section id="arquitetura">
+      <h2>Arquitetura</h2>
+      <p>
+        O repositório é composto por quatro arquivos estáticos. Não há build step, não há framework e não há backend.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Arquivo</th><th>Responsabilidade</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>index.html</code></td><td>Estrutura da página: header, relógio ao vivo, 6 tiles de KPIs, lista de feriados e rodapé.</td></tr>
+          <tr><td><code>script.js</code></td><td>Lógica completa: cálculos dos KPIs, i18n, tema claro/escuro, relógio, watchdog de atualização e animação de fundo (canvas).</td></tr>
+          <tr><td><code>styles.css</code></td><td>Design system com tokens por tema (claro/escuro), tiles responsivos e animações.</td></tr>
+          <tr><td><code>translations.js</code></td><td>Dicionário de tradução em 8 idiomas (pt, es, en, fr, de, it, zh, ja).</td></tr>
+        </tbody>
+      </table>
+
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="arq-title arq-desc">
+          <title id="arq-title">Fluxo de atualização dos KPIs</title>
+          <desc id="arq-desc">O relógio dispara a cada segundo; a cada 5 minutos (ou ao focar a aba) recalcula todos os KPIs e atualiza os tiles.</desc>
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#94a3b8" />
+            </marker>
+          </defs>
+          <!-- Nós -->
+          <g font-family="ui-sans-serif, system-ui" font-size="13">
+            <!-- Relógio -->
+            <rect x="40" y="40" width="150" height="56" rx="10" fill="#1e293b" stroke="#334155" />
+            <text x="115" y="62" text-anchor="middle" fill="#f8fafc" font-weight="700">Relógio (1s)</text>
+            <text x="115" y="80" text-anchor="middle" fill="#94a3b8">setInterval + focus/visibility</text>
+            <!-- Bucket -->
+            <rect x="275" y="40" width="150" height="56" rx="10" fill="#1e293b" stroke="#334155" />
+            <text x="350" y="62" text-anchor="middle" fill="#f8fafc" font-weight="700">Bucket 5 min</text>
+            <text x="350" y="80" text-anchor="middle" fill="#94a3b8">Math.floor(now / 300000)</text>
+            <!-- Cálculo -->
+            <rect x="510" y="40" width="150" height="56" rx="10" fill="#1e293b" stroke="#334155" />
+            <text x="585" y="62" text-anchor="middle" fill="#f8fafc" font-weight="700">Calcular KPIs</text>
+            <text x="585" y="80" text-anchor="middle" fill="#94a3b8">dia / semana útil / mês / ano</text>
+            <!-- Tiles -->
+            <rect x="275" y="130" width="150" height="56" rx="10" fill="#1e293b" stroke="#334155" />
+            <text x="350" y="152" text-anchor="middle" fill="#f8fafc" font-weight="700">Atualizar tiles</text>
+            <text x="350" y="170" text-anchor="middle" fill="#94a3b8">percent + label</text>
+            <!-- Watchdog -->
+            <rect x="40" y="170" width="150" height="56" rx="10" fill="#1e293b" stroke="#334155" />
+            <text x="115" y="192" text-anchor="middle" fill="#f8fafc" font-weight="700">Watchdog</text>
+            <text x="115" y="210" text-anchor="middle" fill="#94a3b8">alerta se parar 75 min</text>
+          </g>
+          <!-- Setas -->
+          <line x1="190" y1="68" x2="275" y2="68" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+          <line x1="425" y1="68" x2="510" y2="68" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+          <line x1="350" y1="96" x2="350" y2="130" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+          <line x1="350" y1="186" x2="115" y2="170" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+        </svg>
+      </div>
+      <p class="caption">Figura 1 – Fluxo de atualização: o relógio dispara a cada segundo, mas os KPIs só são recalculados a cada bloco de 5 minutos.</p>
+    </section>
+
+    <!-- KPIs -->
+    <section id="kpis">
+      <h2>KPIs de tempo</h2>
+      <p>
+        Todos os KPIs seguem a mesma lógica: definem uma janela de tempo, calculam quantos minutos já passaram dentro dela
+        e convertem isso em percentual (0–100%). A diferença entre eles está nos limites da janela e em quais minutos contam.
+      </p>
+      <p>
+        Um detalhe importante: todos usam <strong>bucketização de 5 minutos</strong>. Em vez de um percentual exato e
+        contínuo, o valor avança em degraus de 5 em 5 minutos. Isso evita atualizações visuais a cada segundo e deixa a
+        leitura mais estável.
+      </p>
+    </section>
+
+    <!-- Dia -->
+    <section id="kpi-dia">
+      <h2>1. Dia</h2>
+      <p>Mede o quanto do dia corrente já passou, da meia-noite ao instante atual.</p>
+
+      <div class="container container--formula">
+        <header><h4>Fórmula</h4><span class="badge">dailyProgress</span></header>
+        <div class="formula">
+          <span class="kw">início</span> = 00:00 do dia atual<br />
+          <span class="kw">minutos</span> = <span class="fn">minutesBetween</span>(início, agora)<br />
+          <span class="kw">buckets</span> = <span class="fn">Math.floor</span>(minutos / 5)<br />
+          <span class="kw">valor</span> = buckets × (100 / 288)<br />
+          <span class="kw">resultado</span> = <span class="fn">clamp</span>(valor, 0, 100)
+        </div>
+        <p class="caption">288 = (24 × 60) / 5, ou seja, a quantidade de blocos de 5 minutos em um dia inteiro.</p>
+      </div>
+
+      <div class="container container--example">
+        <header><h4>Exemplo</h4><span class="badge">Exemplo prático</span></header>
+        <p>São 14:30 de uma terça-feira.</p>
+        <ul>
+          <li>Minutos desde 00:00: 14 × 60 + 30 = <strong>870 min</strong></li>
+          <li>Buckets: ⌊870 / 5⌋ = <strong>174</strong></li>
+          <li>Percentual: 174 × (100 / 288) ≈ <strong>60,4%</strong></li>
+        </ul>
+      </div>
+
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 600 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dia-title dia-desc">
+          <title id="dia-title">Janela do KPI Dia</title>
+          <desc id="dia-desc">Linha do tempo de um dia: início às 00:00, agora em algum ponto, fim às 23:59:59,999.</desc>
+          <defs>
+            <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,8 L8,4 z" fill="#64748b" />
+            </marker>
+          </defs>
+          <line x1="40" y1="90" x2="560" y2="90" stroke="#334155" stroke-width="2" />
+          <text x="40" y="115" fill="#94a3b8" font-size="12">00:00</text>
+          <text x="560" y="115" text-anchor="end" fill="#94a3b8" font-size="12">23:59:59,999</text>
+          <circle cx="250" cy="90" r="6" fill="#3b82f6" />
+          <text x="250" y="115" text-anchor="middle" fill="#f8fafc" font-size="12">Agora (ex.: 14:30)</text>
+          <line x1="40" y1="90" x2="250" y2="90" stroke="#3b82f6" stroke-width="3" marker-end="url(#arr)" />
+        </svg>
+      </div>
+      <p class="caption">Figura 2 – O KPI do dia mede a fração entre o trecho percorrido (00:00 até agora) e o dia inteiro.</p>
+    </section>
+
+    <!-- Semana útil -->
+    <section id="kpi-semana-utile">
+      <h2>2. Semana útil</h2>
+      <p>Mede o progresso da semana de trabalho (segunda a sexta), descontando o almoço e apenas dentro do horário comercial.</p>
+      <p>Esta é a regra de negócio mais específica do projeto. Ela considera:</p>
+      <ul>
+        <li>Dias úteis: segunda a sexta (5 dias).</li>
+        <li>Horário comercial: <strong>09:00 às 18:00</strong>.</li>
+        <li>Intervalo de almoço: <strong>12:00 às 13:00</strong> (não conta).</li>
+        <li>Total útil por semana: 5 dias × 8 horas = <strong>240 minutos úteis por dia → 1.200 min semanais</strong>.</li>
+      </ul>
+
+      <div class="container container--formula">
+        <header><h4>Fórmula</h4><span class="badge">workweekProgress</span></header>
+        <div class="formula">
+          <span class="kw">inícioSemana</span> = segunda-feira 00:00 da semana atual<br />
+          <span class="kw">totalÚtil</span> = 5 × 8 × 60 = 1.200 min<br />
+          <span class="kw">para cada dia útil (seg→sex):</span><br />
+          &nbsp;&nbsp;manhã = sobreposição([dia 00:00–23:59:59,999], [09:00–12:00])<br />
+          &nbsp;&nbsp;tarde = sobreposição([dia 00:00–23:59:59,999], [13:00–18:00])<br />
+          <span class="kw">útilAcumulado</span> = soma de manhã + tarde de todos os dias até agora<br />
+          <span class="kw">valor</span> = ⌊útilAcumulado / 5⌋ × (100 / (1.200 / 5))<br />
+          <span class="kw">resultado</span> = <span class="fn">clamp</span>(valor, 0, 100)
+        </div>
+        <p class="caption">A função <code>overlapsMinutes</code> calcula quantos minutos de uma faixa de trabalho realmente caem dentro do intervalo entre o início do dia e o instante atual.</p>
+      </div>
+
+      <div class="container container--example">
+        <header><h4>Exemplo</h4><span class="badge">Exemplo prático</span></header>
+        <p>Quarta-feira, 10:30.</p>
+        <ul>
+          <li>Segunda e terça completas: 2 × 480 = <strong>960 min</strong></li>
+          <li>Quarta até 10:30: apenas a manhã útil (09:00–10:30) = <strong>90 min</strong></li>
+          <li>Total útil: 960 + 90 = <strong>1.050 min</strong></li>
+          <li>Buckets: ⌊1.050 / 5⌋ = 210</li>
+          <li>Percentual: 210 × (100 / 240) ≈ <strong>87,5%</strong></li>
+        </ul>
+      </div>
+
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="sw-title sw-desc">
+          <title id="sw-title">Faixas úteis de um dia útil</title>
+          <desc id="sw-desc">Um dia útil das 00:00 às 23:59, com dois blocos úteis (manhã e tarde) separados pelo almoço.</desc>
+          <defs>
+            <marker id="arr2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,8 L8,4 z" fill="#64748b" />
+            </marker>
+          </defs>
+          <!-- Eixo do dia -->
+          <line x1="40" y1="110" x2="660" y2="110" stroke="#334155" stroke-width="2" />
+          <text x="40" y="135" fill="#94a3b8" font-size="12">00:00</text>
+          <text x="350" y="135" text-anchor="middle" fill="#94a3b8" font-size="12">12:00</text>
+          <text x="660" y="135" text-anchor="end" fill="#94a3b8" font-size="12">23:59:59,999</text>
+          <!-- Manhã útil -->
+          <rect x="140" y="60" width="210" height="40" rx="6" fill="#3b82f6" opacity="0.9" />
+          <text x="245" y="82" fill="#fff" text-anchor="middle" font-size="12" font-weight="700">09:00 – 12:00 (útil)</text>
+          <!-- Almoço -->
+          <rect x="350" y="60" width="60" height="40" rx="6" fill="#475569" />
+          <text x="380" y="82" fill="#cbd5e1" text-anchor="middle" font-size="12">12:00 – 13:00</text>
+          <!-- Tarde útil -->
+          <rect x="410" y="60" width="190" height="40" rx="6" fill="#3b82f6" opacity="0.9" />
+          <text x="505" y="82" fill="#fff" text-anchor="middle" font-size="12" font-weight="700">13:00 – 18:00 (útil)</text>
+          <!-- Agora -->
+          <line x1="300" y1="110" x2="300" y2="60" stroke="#22c55e" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arr2)" />
+          <text x="300" y="155" text-anchor="middle" fill="#22c55e" font-size="12" font-weight="700">Agora</text>
+        </svg>
+      </div>
+      <p class="caption">Figura 3 – Apenas os blocos azul (manhã e tarde) contam para o KPI da semana útil; o almoço e o período fora do horário comercial são ignorados.</p>
+    </section>
+
+    <!-- Semana -->
+    <section id="kpi-semana">
+      <h2>3. Semana</h2>
+      <p>Mede o quanto da semana completa (segunda a domingo, 24h por dia) já passou.</p>
+
+      <div class="container container--formula">
+        <header><h4>Fórmula</h4><span class="badge">weeklyProgress</span></header>
+        <div class="formula">
+          <span class="kw">inícioSemana</span> = segunda-feira 00:00<br />
+          <span class="kw">total</span> = 7 × 24 × 60 = 10.080 min<br />
+          <span class="kw">minutos</span> = <span class="fn">minutesBetween</span>(inícioSemana, agora)<br />
+          <span class="kw">buckets</span> = ⌊minutos / 5⌋<br />
+          <span class="kw">valor</span> = buckets × (100 / (10.080 / 5))<br />
+          <span class="kw">resultado</span> = <span class="fn">clamp</span>(valor, 0, 100)
+        </div>
+        <p class="caption">Ao contrário da semana útil, esta conta finais de semana e madrugada inteira.</p>
+      </div>
+    </section>
+
+    <!-- Mês -->
+    <section id="kpi-mes">
+      <h2>4. Mês</h2>
+      <p>Mede o quanto do mês corrente já passou, do primeiro dia até o último dia do mês.</p>
+
+      <div class="container container--formula">
+        <header><h4>Fórmula</h4><span class="badge">monthlyProgress</span></header>
+        <div class="formula">
+          <span class="kw">início</span> = 1º dia do mês, 00:00<br />
+          <span class="kw">fim</span> = primeiro dia do mês seguinte, 00:00<br />
+          <span class="kw">totalMin</span> = <span class="fn">minutesBetween</span>(início, fim)<br />
+          <span class="kw">passadoMin</span> = <span class="fn">minutesBetween</span>(início, agora)<br />
+          <span class="kw">buckets</span> = ⌊passadoMin / 5⌋<br />
+          <span class="kw">valor</span> = buckets × (100 / (totalMin / 5))<br />
+          <span class="kw">resultado</span> = <span class="fn">clamp</span>(valor, 0, 100)
+        </div>
+        <p class="caption">O total de minutos varia conforme o mês (28, 29, 30 ou 31 dias). O cálculo se ajusta automaticamente.</p>
+      </div>
+    </section>
+
+    <!-- Ano -->
+    <section id="kpi-ano">
+      <h2>5. Ano</h2>
+      <p>Mede o quanto do ano corrente já passou, de 1º de janeiro a 31 de dezembro.</p>
+
+      <div class="container container--formula">
+        <header><h4>Fórmula</h4><span class="badge">yearlyProgress</span></header>
+        <div class="formula">
+          <span class="kw">início</span> = 1º de janeiro, 00:00<br />
+          <span class="kw">fim</span> = 1º de janeiro do ano seguinte, 00:00<br />
+          <span class="kw">totalMin</span> = <span class="fn">minutesBetween</span>(início, fim)<br />
+          <span class="kw">passadoMin</span> = <span class="fn">minutesBetween</span>(início, agora)<br />
+          <span class="kw">buckets</span> = ⌊passadoMin / 5⌋<br />
+          <span class="kw">valor</span> = buckets × (100 / (totalMin / 5))<br />
+          <span class="kw">resultado</span> = <span class="fn">clamp</span>(valor, 0, 100)
+        </div>
+        <p class="caption">Em anos bissextos o total é maior (366 dias), mas a lógica permanece idêntica.</p>
+      </div>
+    </section>
+
+    <!-- Feriados -->
+    <section id="feriados">
+      <h2>Feriados nacionais</h2>
+      <p>
+        O tile de feriados não é um KPI de percentual, mas uma lista estática de 12 feriados nacionais do Brasil com data
+        fixa (dia/mês). Eles não dependem de cálculo de Páscoa móvel nem de calendário estadual/municipal.
+      </p>
+      <p>Regras de exibição:</p>
+      <ul>
+        <li>Feriados já ocorridos no ano corrente ficam <strong>ocultos</strong>.</li>
+        <li>O próximo feriado ainda não ocorrido recebe destaque (<em>underline</em>).</li>
+        <li>Se nenhum feriado restar no ano, nenhum item é destacado.</li>
+      </ul>
+      <div class="container">
+        <header><h4>Feriados listados</h4></header>
+        <table>
+          <thead>
+            <tr><th>Data</th><th>Feriado</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>01/01</td><td>Ano Novo</td></tr>
+            <tr><td>03/04</td><td>Paixão de Cristo</td></tr>
+            <tr><td>05/04</td><td>Páscoa</td></tr>
+            <tr><td>21/04</td><td>Tiradentes</td></tr>
+            <tr><td>01/05</td><td>Dia do Trabalho</td></tr>
+            <tr><td>04/06</td><td>Corpus Christi</td></tr>
+            <tr><td>07/09</td><td>Independência</td></tr>
+            <tr><td>12/10</td><td>Nossa Senhora Aparecida</td></tr>
+            <tr><td>02/11</td><td>Finados</td></tr>
+            <tr><td>15/11</td><td>Proclamação da República</td></tr>
+            <tr><td>20/11</td><td>Consciência Negra</td></tr>
+            <tr><td>25/12</td><td>Natal</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Resumo técnico -->
+    <section id="resumo">
+      <h2>Resumo técnico</h2>
+
+      <div class="container container--code">
+        <header><h4>Helpers reutilizáveis</h4><span class="badge">script.js</span></header>
+        <pre><code>function minutesBetween(a, b) {
+  return Math.max(0, (b.getTime() - a.getTime()) / 60000);
+}
+
+function overlapsMinutes(rangeStart, rangeEnd, windowStart, windowEnd) {
+  const s = Math.max(rangeStart.getTime(), windowStart.getTime());
+  const e = Math.min(rangeEnd.getTime(), windowEnd.getTime());
+  return Math.max(0, (e - s) / 60000);
+}
+
+function clamp(n, min, max) {
+  return Math.min(max, Math.max(min, n));
+}</code></pre>
+      </div>
+
+      <div class="note">
+        <strong>Não há backend.</strong> Este repositório é 100% front-end estático. Todos os KPIs, o relógio, o tema,
+        o i18n e a animação de fundo rodam no navegador do usuário. Se você precisar de um backend (ex.: salvar preferências,
+        sincronizar dados entre dispositivos ou expor esses cálculos via API), essa camada ainda não existe e precisaria ser
+        adicionada separadamente.
+      </div>
+
+      <table>
+        <thead>
+          <tr><th>Detalhe</th><th>Valor</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Intervalo do relógio</td><td>1 segundo</td></tr>
+          <tr><td>Recálculo dos KPIs</td><td>A cada 5 minutos (bucket), ou ao focar a aba / voltar da página oculta</td></tr>
+          <tr><td>Watchdog (alerta de parada)</td><td>75 minutos sem atualização bem-sucedida</td></tr>
+          <tr><td>Arredondamento</td><td>Buckets de 5 minutos (Math.floor)</td></tr>
+          <tr><td>Limite de percentual</td><td>0% a 100% (clamp)</td></tr>
+          <tr><td>Idiomas suportados</td><td>8 (pt, es, en, fr, de, it, zh, ja)</td></tr>
+          <tr><td>Temas</td><td>Claro e escuro (persistido em localStorage)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="doc-footer">
+      Partes do Tempo — Documentação dos KPIs de tempo. Gerado localmente; nenhum deploy foi realizado.
+    </footer>
+
+  </main>
+
+</div>
+
+<script>
+  // Atualiza os valores de exemplo dos cards com o horário atual (apenas ilustração visual do doc)
+  function updateDemoValues() {
+    const now = new Date();
+    const pct = (v) => Math.min(100, Math.max(0, Math.round(v)));
+    document.getElementById('v-dia').textContent = pct(((now.getHours()*60+now.getMinutes())/(24*60))*100) + '%';
+
+    // Semana útil aproximada (apenas demo visual)
+    const startOfWeekMonday = (d) => {
+      const dd = new Date(d); dd.setHours(0,0,0,0);
+      const day = dd.getDay();
+      const diff = (day === 0) ? -6 : (1 - day);
+      dd.setDate(dd.getDate() + diff);
+      return dd;
+    };
+    const wkStart = startOfWeekMonday(now);
+    const totalUseful = 5*8*60;
+    let useful = 0;
+    for (let i=0; i<5; i++) {
+      const day = new Date(wkStart); day.setDate(wkStart.getDate()+i);
+      if (day > now) break;
+      const aStart = new Date(day); aStart.setHours(9,0,0,0);
+      const aEnd = new Date(day); aEnd.setHours(12,0,0,0);
+      const bStart = new Date(day); bStart.setHours(13,0,0,0);
+      const bEnd = new Date(day); bEnd.setHours(18,0,0,0);
+      const dayStart = new Date(day); dayStart.setHours(0,0,0,0);
+      const dayEnd = new Date(day); dayEnd.setHours(23,59,59,999);
+      const countEnd = (day.toDateString() === now.toDateString()) ? now : dayEnd;
+      const ov = (s,e,ws,we) => Math.max(0, (Math.min(e,we)-Math.max(s,ws))/60000);
+      useful += ov(dayStart, countEnd, aStart, aEnd) + ov(dayStart, countEnd, bStart, bEnd);
+    }
+    document.getElementById('v-semana-utile').textContent = pct((useful/totalUseful)*100) + '%';
+
+    // Semana completa
+    const wkTotal = 7*24*60;
+    const wkPassed = (now - wkStart)/60000;
+    document.getElementById('v-semana').textContent = pct((wkPassed/wkTotal)*100) + '%';
+
+    // Mês
+    const mStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const mEnd = new Date(now.getFullYear(), now.getMonth()+1, 1);
+    const mTotal = (mEnd - mStart)/60000;
+    const mPassed = (now - mStart)/60000;
+    document.getElementById('v-mes').textContent = pct((mPassed/mTotal)*100) + '%';
+
+    // Ano
+    const yStart = new Date(now.getFullYear(), 0, 1);
+    const yEnd = new Date(now.getFullYear()+1, 0, 1);
+    const yTotal = (yEnd - yStart)/60000;
+    const yPassed = (now - yStart)/60000;
+    document.getElementById('v-ano').textContent = pct((yPassed/yTotal)*100) + '%';
+  }
+  updateDemoValues();
+  setInterval(updateDemoValues, 1000);
+
+  /* Toggle de tema (claro/escuro) com persistência */
+  (function initThemeToggle() {
+    const root = document.documentElement;
+    const saved = localStorage.getItem('docTheme');
+    if (saved) root.setAttribute('data-theme', saved);
+
+    const btn = document.getElementById('themeToggle');
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+      const isLight = root.getAttribute('data-theme') === 'light'
+        || (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: light)').matches);
+      const next = isLight ? 'dark' : 'light';
+      root.setAttribute('data-theme', next);
+      localStorage.setItem('docTheme', next);
+    });
+  })();
+
+  /* Scroll-spy: destaca o link da seção visível */
+  (function initScrollSpy() {
+    const content = document.querySelector('.doc-content');
+    const links = Array.from(document.querySelectorAll('.nav-link'));
+    const sections = links
+      .map((l) => document.querySelector(l.getAttribute('href')))
+      .filter(Boolean);
+
+    const setActive = (id) => {
+      links.forEach((l) => l.classList.toggle('nav-link--active', l.getAttribute('href') === '#' + id));
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((e) => e.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) setActive(visible.target.id);
+    }, { root: content, rootMargin: '-10% 0px -70% 0px', threshold: [0, 0.25, 0.5, 1] });
+
+    sections.forEach((s) => observer.observe(s));
+  })();
+</script>
+</body>
+</html>

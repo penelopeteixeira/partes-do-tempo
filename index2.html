@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Partes do Tempo — KPIs (versão base)</title>
+</head>
+<body>
+
+  <h1>Partes do Tempo — KPIs</h1>
+  <p>Agora: <span id="agora">--</span></p>
+
+  <hr />
+
+  <h2>Progresso</h2>
+  <ul id="kpi-lista"></ul>
+
+  <hr />
+
+  <h2>Regras aplicadas</h2>
+  <ul>
+    <li><strong>Bucketização:</strong> todos os KPIs agrupam o tempo em blocos de 5 minutos.</li>
+    <li><strong>Clamp:</strong> o resultado é sempre limitado entre 0% e 100%.</li>
+    <li><strong>Dia:</strong> janela de 00:00 até 23:59:59,999 (288 blocos de 5 min).</li>
+    <li><strong>Semana útil:</strong> segunda a sexta, 09:00–12:00 e 13:00–18:00; almoço não conta; total de 1.200 min.</li>
+    <li><strong>Semana:</strong> segunda a domingo, 24h por dia; total de 10.080 min.</li>
+    <li><strong>Mês:</strong> do 1º dia ao último dia do mês corrente (28 a 31 dias).</li>
+    <li><strong>Ano:</strong> de 1º de janeiro a 31 de dezembro (365 ou 366 dias).</li>
+  </ul>
+
+  <hr />
+
+  <h2>Feriados</h2>
+  <ul id="feriados-lista"></ul>
+
+  <script src="kpis.js"></script>
+  <script>
+    /* Lista de feriados: mesmas datas do index.html original */
+    const FERIADOS = [
+      { mmdd: "01-01", nome: "Ano Novo" },
+      { mmdd: "04-03", nome: "Paixão de Cristo" },
+      { mmdd: "04-05", nome: "Páscoa" },
+      { mmdd: "04-21", nome: "Tiradentes" },
+      { mmdd: "05-01", nome: "Dia do Trabalho" },
+      { mmdd: "06-04", nome: "Corpus Christi" },
+      { mmdd: "09-07", nome: "Independência" },
+      { mmdd: "10-12", nome: "N. Sra. Aparecida" },
+      { mmdd: "11-02", nome: "Finados" },
+      { mmdd: "11-15", nome: "Proclamação da República" },
+      { mmdd: "11-20", nome: "Consciência Negra" },
+      { mmdd: "12-25", nome: "Natal" }
+    ];
+
+    function renderFeriados(){
+      const now = new Date();
+      const hoje = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const ul = document.getElementById("feriados-lista");
+      if (!ul) return;
+
+      ul.innerHTML = "";
+      let proximo = null;
+
+      FERIADOS.forEach((f) => {
+        const [mm, dd] = f.mmdd.split("-").map(Number);
+        const data = new Date(now.getFullYear(), mm - 1, dd);
+        const passou = data.getTime() < hoje.getTime();
+
+        if (passou) return;                       // feriados passados ficam ocultos
+
+        const li = document.createElement("li");
+        li.textContent = String(dd).padStart(2, "0") + "/" + String(mm).padStart(2, "0") + " - " + f.nome;
+
+        if (!proximo){
+          proximo = li;
+          li.innerHTML = "<u>" + li.textContent + "</u>";  // destaque do próximo
+        }
+
+        ul.appendChild(li);
+      });
+    }
+
+    renderFeriados();
+    setInterval(renderFeriados, 60000);
+  </script>
+
+</body>
+</html>
