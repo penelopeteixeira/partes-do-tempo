@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Partes do Tempo — KPIs (molde)</title>
+  <script src="Molde-Script.js" defer></script>
+</head>
+<body>
+  <h1>Partes do Tempo — KPIs</h1>
+  <p>Agora <time id="agora">—</time></p>
+  <p>Até meia-noite <strong id="tempo-restante">—</strong></p>
+
+  <hr>
+
+  <h2>Progresso</h2>
+  <ul id="kpi-lista"></ul>
+
+  <hr>
+
+  <h2>Regras aplicadas</h2>
+  <ul>
+    <li><strong>Blocos de cinco minutos.</strong> O cálculo conta só os blocos completos. O rótulo chega a 100% quando o período termina.</li>
+    <li><strong>Dia e relógio.</strong> O dia vai de uma meia-noite local à próxima. O tempo restante arredonda para cima ao minuto.</li>
+    <li><strong>Semana útil.</strong> Segunda a sexta, das 9h às 12h e das 13h às 18h. São 40 horas, 2.400 minutos ou 480 blocos.</li>
+    <li><strong>Semana inteira.</strong> Começa na segunda-feira à meia-noite e termina quando começa a próxima segunda-feira.</li>
+    <li><strong>Mês e ano.</strong> Cada período usa suas datas reais, incluindo o dia extra em ano bissexto.</li>
+    <li><strong>Trimestres.</strong> Cada um usa seus próprios três meses. Os concluídos ficam em 100%, os futuros em 0% e o atual aparece marcado.</li>
+  </ul>
+
+  <hr>
+
+  <h2>Feriados nacionais <span id="ano-feriados"></span></h2>
+  <ul id="feriados-lista"></ul>
+  <p id="feriados-vazio" hidden>Nenhum feriado restante neste ano</p>
+  <p id="feriados-status" aria-live="polite" hidden></p>
+  <nav id="feriados-paginacao" aria-label="Páginas de feriados" hidden>
+    <button id="feriados-anterior" type="button">Anterior</button>
+    <button id="feriados-proxima" type="button">Próxima</button>
+  </nav>
+
+  <!--
+    FERIADOS NACIONAIS — EDIÇÃO MANUAL
+
+    Para cadastrar um feriado, copie um <li> e preencha:
+    1. A data completa em datetime, no formato AAAA-MM-DD.
+    2. O nome do feriado depois de </time>.
+
+    Pode cadastrar o próximo ano neste mesmo bloco com antecedência.
+    O painel gera o dia, o mês, o dia da semana e a paginação.
+  -->
+  <template id="feriados-nacionais-dados">
+    <ul>
+      <li><time datetime="2026-01-01"></time> Confraternização Universal</li>
+      <li><time datetime="2026-04-03"></time> Paixão de Cristo</li>
+      <li><time datetime="2026-04-21"></time> Tiradentes</li>
+      <li><time datetime="2026-05-01"></time> Dia do Trabalho</li>
+      <li><time datetime="2026-09-07"></time> Independência do Brasil</li>
+      <li><time datetime="2026-10-12"></time> Nossa Senhora Aparecida</li>
+      <li><time datetime="2026-11-02"></time> Finados</li>
+      <li><time datetime="2026-11-15"></time> Proclamação da República</li>
+      <li><time datetime="2026-11-20"></time> Consciência Negra</li>
+      <li><time datetime="2026-12-25"></time> Natal</li>
+    </ul>
+  </template>
+
+  <hr>
+
+  <h2>Mercúrio retrógrado</h2>
+  <ul id="mercurio-lista"></ul>
+  <p id="mercurio-vazio" hidden>Nenhum período futuro cadastrado</p>
+
+  <!--
+    MERCÚRIO RETRÓGRADO — EDIÇÃO MANUAL
+
+    Para cadastrar um período, copie um <li> neste bloco.
+    Preencha em datetime (AAAA-MM-DD) a data de início no primeiro <time>
+    e a data do último dia no segundo <time>.
+
+    Pode cadastrar o próximo ano aqui com antecedência.
+    O painel ordena as datas e exibe até três períodos em andamento ou futuros.
+  -->
+  <template id="mercurio-retrogrado-dados">
+    <ul>
+      <li><time datetime="2027-02-09"></time><time datetime="2027-03-03"></time></li>
+      <li><time datetime="2027-06-10"></time><time datetime="2027-07-04"></time></li>
+      <li><time datetime="2027-10-07"></time><time datetime="2027-10-28"></time></li>
+    </ul>
+  </template>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Como o Partes do Tempo usa o relógio local, calcula os indicadores e atualiza o painel.">
+  <title>Arquitetura e cálculo | Partes do Tempo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f6f6f0;
+      --surface: #fffefa;
+      --ink: #202c28;
+      --muted: #4b5c54;
+      --line: #d6dfd6;
+      --accent: #135c4c;
+      --tint: #e6f2eb;
+      --hero: #102e28;
+      --hero-text: #f3fbf1;
+      --hero-muted: #c4dad0;
+      --radius: 1rem;
+      font-family: system-ui, sans-serif;
+      font-size: 100%;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); line-height: 1.65; }
+    h1, h2, h3, p, figure, ul, ol { margin-block: 0; }
+    h1, h2 { font-family: Georgia, serif; font-weight: 600; line-height: 1.08; letter-spacing: -.045em; }
+    h2 { font-size: clamp(1.9rem, 5vw, 2.85rem); }
+    h3 { font-size: 1.08rem; line-height: 1.4; }
+    p + p { margin-top: .75rem; }
+    code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; overflow-wrap: anywhere; }
+    a { color: var(--accent); text-underline-offset: .2em; }
+    a:hover { text-decoration-thickness: .15em; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    [id] { scroll-margin-top: 1.5rem; }
+
+    .skip {
+      position: absolute;
+      z-index: 2;
+      top: .75rem;
+      left: .75rem;
+      padding: .65rem 1rem;
+      border-radius: .45rem;
+      background: var(--surface);
+      transform: translateY(-160%);
+    }
+    .skip:focus { transform: translateY(0); }
+    .wrap { width: min(100% - 2rem, 72rem); margin-inline: auto; }
+    .masthead {
+      background: radial-gradient(ellipse at 85% 0%, #1d4c3d, transparent 60%), var(--hero);
+      color: var(--hero-text);
+      border-bottom: 4px solid #92c6a7;
+    }
+    .hero { padding-block: clamp(2.6rem, 7vw, 5.1rem) clamp(2.4rem, 5vw, 3.6rem); }
+    .eyebrow { font-size: .84rem; color: var(--hero-muted); font-weight: 700; letter-spacing: .08em; }
+    .hero h1 { font-size: clamp(2.55rem, 8vw, 5.25rem); margin-top: .65rem; }
+    .hero-summary { max-width: 53ch; margin-top: 1rem; color: var(--hero-muted); font-size: clamp(1.05rem, 3vw, 1.22rem); }
+    .hero-links { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem 1rem; margin-top: 1.65rem; }
+    .hero-links a { display: inline-flex; align-items: center; min-height: 44px; padding: .45rem .9rem; border: 1px solid #77988a; border-radius: .5rem; color: var(--hero-text); font-size: .92rem; }
+    .hero-links a:hover { background: #275445; }
+    .masthead :focus-visible { outline-color: #e3f8e7; }
+
+    .page { display: grid; grid-template-columns: 13.5rem minmax(0, 1fr); gap: clamp(2rem, 5vw, 4rem); padding-block: 2.3rem 3.5rem; }
+    .contents { align-self: start; position: sticky; top: 1.5rem; }
+    .contents p { color: var(--muted); font-size: .85rem; font-weight: 650; margin-bottom: .5rem; }
+    .contents ul { padding: 0; list-style: none; border-left: 1px solid var(--line); }
+    .contents a { display: block; padding: .42rem .75rem; font-size: .94rem; text-decoration: none; }
+    .contents a:hover { background: var(--tint); text-decoration: underline; }
+    main { min-width: 0; }
+    main section + section { border-top: 1px solid var(--line); margin-top: 2.5rem; padding-top: 2.25rem; }
+    .intro { margin-top: .85rem; max-width: 69ch; }
+    .aside-text { margin-top: .85rem; color: var(--muted); font-size: .92rem; }
+
+    .flow { margin: 1.2rem 0 0; padding: 1rem; background: var(--tint); border: 1px solid #c5dbcd; border-radius: var(--radius); }
+    .flow ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; padding: 0; list-style: none; }
+    .flow li { position: relative; display: grid; align-content: start; gap: .35rem; padding: .85rem; background: var(--surface); border: 1px solid var(--line); border-radius: .65rem; }
+    .flow strong { color: var(--accent); }
+    .flow li span:not(.arrow), figcaption { color: var(--muted); font-size: .88rem; }
+    .flow .arrow { position: absolute; inset-inline-end: -1.38rem; top: 50%; transform: translateY(-50%); color: var(--accent); font-weight: 700; }
+    figcaption { margin-top: .7rem; }
+
+    .file-map { display: grid; grid-template-columns: minmax(9rem, max-content) 1fr; margin-block: 1rem 0; }
+    .file-map dt, .file-map dd { padding: .6rem 0; border-bottom: 1px solid var(--line); }
+    .file-map dt { font-weight: 650; padding-right: 1rem; }
+    .file-map dd { margin: 0; color: var(--muted); }
+
+    .formula { margin-top: 1.2rem; padding: .85rem 1rem; border-left: .27rem solid var(--accent); border-radius: .3rem .7rem .7rem .3rem; background: var(--tint); }
+    .formula strong { display: block; color: var(--accent); }
+    .formula p { color: var(--muted); margin-top: .25rem; }
+    .rules { margin-top: 1rem; padding-left: 1.25rem; }
+    .rules li + li { margin-top: .55rem; }
+
+    .example { margin-top: 1.15rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(.8rem, 3vw, 1.25rem); }
+    .example p { margin-top: .45rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: .75rem; font-variant-numeric: tabular-nums; line-height: 1.45; }
+    th, td { text-align: left; padding: .53rem .35rem; border-bottom: 1px solid var(--line); }
+    thead th { color: var(--accent); font-size: .9rem; }
+    tbody th { font-weight: 550; }
+    td { color: var(--muted); }
+    td:last-child { color: var(--ink); font-weight: 700; }
+    .example .aside-text { margin-top: .8rem; }
+
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem; margin-top: 1.1rem; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; }
+    .card h3 { color: var(--accent); }
+    .card p { margin-top: .5rem; }
+    .card p:last-child { color: var(--muted); }
+    .source-note { border-top: 1px solid var(--line); padding-block: 1.3rem 1.6rem; color: var(--muted); font-size: .9rem; }
+
+    @media (max-width: 52rem) {
+      .page { grid-template-columns: minmax(0, 1fr); gap: 1.65rem; padding-top: 1.35rem; }
+      .contents { position: static; }
+      .contents ul { display: flex; gap: .3rem; flex-wrap: wrap; border-left: 0; }
+      .contents a { display: flex; align-items: center; min-height: 44px; border: 1px solid var(--line); border-radius: .5rem; }
+    }
+
+    @media (max-width: 37rem) {
+      .cards, .flow ol { grid-template-columns: minmax(0, 1fr); }
+      .flow ol { gap: 1.65rem; }
+      .flow .arrow { inset-inline-end: auto; inset-inline-start: .85rem; top: auto; bottom: -1.47rem; transform: rotate(90deg); }
+      .file-map { grid-template-columns: minmax(0, 1fr); }
+      .file-map dt { border-bottom: 0; padding-bottom: 0; }
+      .file-map dd { padding-top: .15rem; }
+      th, td { font-size: .84rem; padding-inline: .24rem; }
+      thead th { font-size: .8rem; }
+    }
+
+    @media print {
+      body { background: #fff; color: #000; }
+      .masthead, .example, .card, .flow { background: #fff; color: #000; }
+      .hero-summary, .eyebrow { color: #333; }
+      .contents, .hero-links, .skip { display: none; }
+      .page { display: block; }
+      .wrap { width: 100%; }
+      .hero { padding-block: .7rem 1rem; }
+      h2, h3 { break-after: avoid; }
+      .card, tr { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#conteudo">Ir para o conteúdo</a>
+  <header class="masthead">
+    <div class="wrap hero">
+      <p class="eyebrow">Partes do Tempo · Documentação técnica</p>
+      <h1>Arquitetura e cálculo</h1>
+      <p class="hero-summary">Como o relógio do dispositivo alimenta os indicadores, por que cada período tem sua própria conta e onde encontrar as regras no código.</p>
+      <div class="hero-links">
+        <a href="./index.html">Abrir o painel</a>
+        <a href="./Molde-Index.html">Abrir o molde de cálculo</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap page">
+    <nav class="contents" aria-label="Nesta página">
+      <p>Nesta página</p>
+      <ul>
+        <li><a href="#arquitetura">Arquitetura</a></li>
+        <li><a href="#regras">Regras de cálculo</a></li>
+        <li><a href="#exemplo">Exemplo calculado</a></li>
+        <li><a href="#calendarios">Calendários</a></li>
+        <li><a href="#interface">Interface</a></li>
+        <li><a href="#conferencia">Conferência</a></li>
+      </ul>
+    </nav>
+
+    <main id="conteudo" tabindex="-1">
+      <section id="arquitetura" aria-labelledby="titulo-arquitetura">
+        <h2 id="titulo-arquitetura">Do relógio à tela</h2>
+        <p class="intro">O Partes do Tempo é um painel estático com indicadores atualizados pelo navegador. Ao abrir <code>index.html</code>, o navegador carrega o CSS e os dois scripts locais. Os números iniciais do HTML são exemplos. <code>tempo.js</code> lê a hora do dispositivo e atualiza o painel com os valores calculados.</p>
+
+        <figure class="flow">
+          <ol aria-label="Fluxo de atualização dos indicadores">
+            <li><strong>1. Ler o horário local</strong><span>O script cria um <code>Date</code> com a data e a hora atuais.</span><span class="arrow" aria-hidden="true">→</span></li>
+            <li><strong>2. Medir o período</strong><span>O script encontra o início e o fim e conta os blocos completos.</span><span class="arrow" aria-hidden="true">→</span></li>
+            <li><strong>3. Atualizar a tela</strong><span>Os valores chegam aos rótulos, às barras e ao arco do dia.</span></li>
+          </ol>
+          <figcaption><code>atualizarPainel</code> executa esse fluxo ao abrir a página, a cada segundo e ao voltar para a aba. O calendário é montado na abertura e recalculado quando muda a data local.</figcaption>
+        </figure>
+
+        <dl class="file-map" aria-label="Mapa dos arquivos do repositório">
+          <dt><code>index.html</code></dt>
+          <dd>Estrutura do painel, marcações <code>data-kpi</code> para localizar os indicadores e cadastros manuais de datas.</dd>
+          <dt><code>tempo.js</code></dt>
+          <dd>Relógio, contagem até meia-noite, cálculos de progresso e atualização dos calendários.</dd>
+          <dt><code>styles.css</code></dt>
+          <dd>Paletas, layout responsivo, estilos dos indicadores e seleção da página de feriados.</dd>
+          <dt><code>theme.js</code></dt>
+          <dd>Botão de tema e animação das duas camadas de fundo.</dd>
+          <dt><code>Molde-Index.html</code><br><code>Molde-Script.js</code></dt>
+          <dd>Demonstração independente que expõe as fórmulas e mantém seus próprios cadastros.</dd>
+          <dt><code>hourglass-icon.png</code></dt>
+          <dd>Ícone da aba carregado pelo HTML principal.</dd>
+        </dl>
+      </section>
+
+      <section id="regras" aria-labelledby="titulo-regras">
+        <h2 id="titulo-regras">Como o tempo vira percentual</h2>
+        <p class="intro">Imagine uma régua com uma marca a cada cinco minutos. O painel conta apenas os intervalos completos e os compara com a extensão do período. Em um ano bissexto, por exemplo, a régua de fevereiro tem 29 dias.</p>
+
+        <div class="formula">
+          <strong>Progresso = blocos completos decorridos ÷ total de blocos × 100</strong>
+          <p><code>calcularProgressoEmBlocos</code> descarta a fração do bloco em andamento. O arco e as barras recebem o valor calculado. O número mostrado arredonda para inteiro e fica em até 99% enquanto o período ainda está em curso.</p>
+        </div>
+
+        <ul class="rules">
+          <li><strong>Dia.</strong> De uma meia-noite local à próxima. O percentual alimenta o arco SVG e o texto do cartão Hoje.</li>
+          <li><strong>Semana inteira.</strong> Da segunda-feira à meia-noite até o início da segunda seguinte.</li>
+          <li><strong>Semana útil.</strong> De segunda a sexta, das 9h às 12h e das 13h às 18h. O total é de 40 horas, ou 480 blocos. O almoço, as noites e o fim de semana ficam fora da soma. A jornada segue essa grade fixa, inclusive nas datas do cadastro de feriados.</li>
+          <li><strong>Mês.</strong> Do dia 1 do mês atual ao dia 1 do próximo. O nome mostrado também acompanha o mês local.</li>
+          <li><strong>Ano.</strong> De 1º de janeiro ao início do ano seguinte. O cabeçalho anual exibe o percentual decorrido.</li>
+          <li><strong>Trimestres.</strong> Q1 vai de janeiro a março, Q2 de abril a junho, Q3 de julho a setembro e Q4 de outubro a dezembro. Cada barra mede a duração do próprio trimestre. Os concluídos ficam em 100%, os futuros em 0% e o atual recebe o destaque.</li>
+        </ul>
+
+        <p class="aside-text">A contagem <strong>Até meia-noite</strong> segue outra unidade. <code>calcularMinutosAteMeiaNoite</code> subtrai o horário atual da próxima meia-noite local e arredonda os minutos para cima. Por isso, faltando apenas um segundo, a tela ainda mostra um minuto.</p>
+      </section>
+
+      <section id="exemplo" aria-labelledby="titulo-exemplo">
+        <h2 id="titulo-exemplo">Uma leitura do painel</h2>
+        <div class="example">
+          <h3 id="titulo-tabela">Quinta-feira, 19 de novembro de 2026, às 16h34min20s</h3>
+          <p>Este é o cenário ilustrado pelos valores iniciais do <code>index.html</code>. A tabela usa os resultados do script para esse horário local.</p>
+          <table aria-labelledby="titulo-tabela">
+            <thead>
+              <tr><th scope="col">Indicador</th><th scope="col">Blocos usados / total</th><th scope="col">Cálculo</th><th scope="col">Tela</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Dia</th><td>198 / 288</td><td>68,75%</td><td>69%</td></tr>
+              <tr><th scope="row">Semana útil</th><td>366 / 480</td><td>76,25%</td><td>76%</td></tr>
+              <tr><th scope="row">Semana inteira</th><td>1.062 / 2.016</td><td>52,68%</td><td>53%</td></tr>
+              <tr><th scope="row">Novembro</th><td>5.382 / 8.640</td><td>62,29%</td><td>62%</td></tr>
+              <tr><th scope="row">Ano</th><td>92.934 / 105.120</td><td>88,41%</td><td>88%</td></tr>
+              <tr><th scope="row">Q4</th><td>14.310 / 26.496</td><td>54,01%</td><td>54%</td></tr>
+            </tbody>
+          </table>
+          <p class="aside-text">Até a meia-noite faltam 7h 25min 40s, que o painel exibe como <strong>7h 26min</strong>. Q1, Q2 e Q3 já terminaram e aparecem em 100%.</p>
+        </div>
+      </section>
+
+      <section id="calendarios" aria-labelledby="titulo-calendarios">
+        <h2 id="titulo-calendarios">Como as datas entram no painel</h2>
+        <p class="intro">O HTML guarda dois cadastros manuais em elementos <code>&lt;template&gt;</code>. Essas listas servem de fonte para o script, que valida as datas locais no formato <code>AAAA-MM-DD</code>, ordena os registros e monta o que aparece na tela.</p>
+        <div class="cards">
+          <div class="card">
+            <h3>Feriados nacionais</h3>
+            <p>Entram os feriados do ano atual a partir de hoje, incluindo a própria data do feriado. O primeiro fica em destaque. Havendo mais de três, o painel gera páginas de até três itens e usa o trecho da URL após <code>#</code> para escolher qual exibir.</p>
+            <p>O cadastro <code>feriados-nacionais-dados</code> recebe uma data e um nome por item. O painel deriva o mês e o dia da semana.</p>
+          </div>
+          <div class="card">
+            <h3>Mercúrio retrógrado</h3>
+            <p>Aparecem até três períodos em andamento ou futuros, ordenados pelo início. O último dia é inclusivo. O ano no cabeçalho acompanha as datas visíveis, que podem atravessar anos diferentes.</p>
+            <p>O cadastro <code>mercurio-retrogrado-dados</code> recebe duas datas por item, primeiro o início e depois o fim.</p>
+          </div>
+        </div>
+        <p class="aside-text">O painel principal e o molde têm cadastros próprios. Quando uma data precisar aparecer nos dois, edite o bloco comentado em cada HTML e recarregue as páginas.</p>
+      </section>
+
+      <section id="interface" aria-labelledby="titulo-interface">
+        <h2 id="titulo-interface">Tema, fundo e telas menores</h2>
+        <p class="intro">A página começa no tema escuro. O botão muda o atributo <code>data-theme</code>, que seleciona a paleta no CSS. A animação segue a mesma transição de cor em dois elementos <code>canvas</code>, um para a chuva e outro para a malha.</p>
+        <p>Essas camadas ficam atrás do painel e deixam os cliques passarem. A animação pausa quando a aba fica oculta. Com a preferência de movimento reduzido, o fundo mantém a malha estática.</p>
+        <p>Em telas de até 900&nbsp;px de largura, os cartões passam a uma coluna, com cabeçalho que acompanha a rolagem e rodapé fixo. Regras por largura do cartão refinam o mostrador do dia em áreas estreitas.</p>
+      </section>
+
+      <section id="conferencia" aria-labelledby="titulo-conferencia">
+        <h2 id="titulo-conferencia">Como conferir uma mudança</h2>
+        <p class="intro">Abra o painel e o molde no navegador. O molde mostra o numerador, o total de blocos e o percentual de cada indicador. Os dois usam a hora local e executam seus scripts a partir dos arquivos do repositório.</p>
+        <ul class="rules">
+          <li>Compare Dia, Semana útil, Semana inteira, Mês, Ano e Q1 a Q4 no mesmo horário.</li>
+          <li>Confira as fronteiras. A jornada útil pausa no almoço e chega a 100% na sexta às 18h. A semana inteira volta a 0% na segunda à meia-noite. Na troca de trimestre, o anterior termina e o novo inicia.</li>
+          <li>Ao editar datas, confira um registro passado, um do dia e um futuro. Verifique também o estado vazio e as setas quando o calendário gerar mais de uma página.</li>
+          <li>Troque o tema e reduza a largura da janela para conferir a leitura e a navegação com teclado ou toque.</li>
+        </ul>
+        <p class="aside-text">O inventário versionado é composto pelos sete arquivos do mapa. Os pontos de entrada são os HTMLs e a execução é direta no navegador.</p>
+      </section>
+    </main>
+  </div>
+
+  <footer class="source-note">
+    <div class="wrap">Referência do código consultado <code>f9ac1e3</code>.</div>
+  </footer>
+</body>
+</html>
